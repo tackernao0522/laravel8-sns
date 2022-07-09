@@ -319,3 +319,202 @@ class ArticleController extends Controller
     }
 }
 ```
+
+# 1-4 記事一覧画面とナビバーの作成
+
++ `$ touch resources/views/app.blade.php`を実行<br>
+
++ `resources/views/app.blade.php`を編集<br>
+
+```html:app.blade.php
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>
+        @yield('title')
+    </title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+    <!-- Bootstrap core CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Material Design Bootstrap -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/css/mdb.min.css" rel="stylesheet">
+</head>
+
+<body>
+
+    @yield('content')
+
+    <!-- JQuery -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <!-- Bootstrap tooltips -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js">
+    </script>
+    <!-- MDB core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/js/mdb.min.js"></script>
+</body>
+
+</html>
+```
+
++ `$ mkdir resources/views/articles && touch $_/index.blade.php`を実行<br>
+
++ `resources/views/articles/index.blade.php`を編集<br>
+
+```html:index.blade.php
+@extends('app')
+
+@section('title', '記事一覧')
+
+@section('content')
+    <div class="container">
+        <div class="card mt-3">
+            <div class="card-body d-flex flex-row">
+                <i class="fas fa-user-circle fa-3x mr-1"></i>
+                <div>
+                    <div class="font-weight-bold">
+                        ユーザー名
+                    </div>
+                    <div class="font-weight-lighter">
+                        2020/2/1 12:00
+                    </div>
+                </div>
+            </div>
+            <div class="card-body pt-0 pb-2">
+                <h3 class="h4 card-title">
+                    記事タイトル
+                </h3>
+                <div class="card-text">
+                    記事本文
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```
+
+## 記事一覧へのダミーデータの表示
+
++ `resources/views/articles/index.blade.php`を編集<br>
+
+```html:index.blade.php
+@extends('app')
+
+@section('title', '記事一覧')
+
+@section('content')
+    <div class="container">
+        @foreach ($articles as $article) <!-- 追加 -->
+            <div class="card mt-3">
+                <div class="card-body d-flex flex-row">
+                    <i class="fas fa-user-circle fa-3x mr-1"></i>
+                    <div>
+                        <div class="font-weight-bold">
+                            {{ $article->user->name }} <!-- 編集 -->
+                        </div>
+                        <div class="font-weight-lighter">
+                            {{ $article->created_at->format('Y/m/d H:i') }} <!-- 編集 -->
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0 pb-2">
+                    <h3 class="h4 card-title">
+                        {{ $article->title }} <!-- 編集 -->
+                    </h3>
+                    <div class="card-text">
+                        {!! nl2br(e($article->body)) !!} <!-- 編集 -->
+                    </div>
+                </div>
+            </div>
+        @endforeach <!-- 追加 -->
+    </div>
+@endsection
+```
+
++ `$ touch resources/views/nav.blade.php`を実行<br>
+
++ `resources/views/nav.blade.php`を編集<br>
+
+```html:nav.blade.php
+<nav class="navbar navbar-expand navbar-dark blue-gradient">
+
+    <a href="/" class="navbar-brand"><i class="far fa-sticky-not mr-1"></i>memo</a>
+
+    <ul class="navbar-nav ml-auto">
+
+        <li class="nav-item">
+            <a href="" class="nav-link">ユーザー登録</a>
+        </li>
+
+        <li class="nav-item">
+            <a href="" class="nav-link">ログイン</a>
+        </li>
+        <li class="nav-item">
+            <a href="" class="nav-link"><i class="fas fa-pen mr-1"></i>投稿する</a>
+        </li>
+
+        {{-- Dropdown --}}
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+                aria-expanded="false">
+                <i class="fas fa-user-circle"></i>
+            </a>
+            <div class="dropdown-menu dropdown-menu-right dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+                <button class="dropdown-item type="button" onclick="location.href="">
+                    マイページ
+                </button>
+                <div class="dropdown-divider"></div>
+                <button form="logout-button" class="dropdown-item" type="submit">
+                    ログアウト
+                </button>
+            </div>
+        </li>
+        <form action="" id="logout-button" method="POST">
+        </form>
+        {{-- Dropdown --}}
+    </ul>
+</nav>
+```
+
++ `resources/views/articles/index.blade.php`を編集<br>
+
+```html:index.blade.php
+@extends('app')
+
+@section('title', '記事一覧')
+
+@section('content')
+    @include('nav') {{-- 追加 --}}
+    <div class="container">
+        @foreach ($articles as $article)
+            <div class="card mt-3">
+                <div class="card-body d-flex flex-row">
+                    <i class="fas fa-user-circle fa-3x mr-1"></i>
+                    <div>
+                        <div class="font-weight-bold">
+                            {{ $article->user->name }}
+                        </div>
+                        <div class="font-weight-lighter">
+                            {{ $article->created_at->format('Y/m/d H:i') }}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body pt-0 pb-2">
+                    <h3 class="h4 card-title">
+                        {{ $article->title }}
+                    </h3>
+                    <div class="card-text">
+                        {!! nl2br(e($article->body)) !!}
+                    </div>
+                </div>
+            </div>
+        @endforeach
+    </div>
+@endsection
+```
