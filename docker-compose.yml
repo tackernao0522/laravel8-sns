@@ -1,0 +1,56 @@
+version: "3.7"
+
+services:
+  mailhog:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  php:
+    container_name: php
+    build: ./docker/php
+    volumes:
+      - ./server:/var/www
+
+  nginx:
+    image: nginx
+    container_name: nginx
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - ./server:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./docker/nginx/cert-key/localhost+1.pem:/etc/certs/localhost+1.pem
+      - ./docker/nginx/cert-key/localhost+1-key.pem:/etc/certs/localhost+1-key.pem
+    depends_on:
+      - php
+
+  db:
+    image: mysql:8.0
+    container_name: laravel8snsdb-host
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROOTPASS}
+      MYSQL_DATABASE: ${DATABASE}
+      MYSQL_USER: ${USERNAME}
+      MYSQL_PASSWORD: ${USERPASS}
+      TZ: "Asia/Tokyo"
+    command: mysqld --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/db/sql:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOSTS=laravel8snsdb-host
+      - PMA_USER=${PMAUSER}
+      - PMA_PASSWORD=${PMAPASS}
+    ports:
+      - 8080:80
