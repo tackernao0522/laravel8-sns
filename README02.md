@@ -122,3 +122,28 @@ class Article extends Model
     }
 }
 ```
+
+# 1-7 記事モデルから記事情報を取得する
+
+## 1. コントローラの編集<br>
+
++ `server/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Article;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+}
+```
