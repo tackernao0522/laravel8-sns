@@ -147,3 +147,20 @@ class ArticleController extends Controller
     }
 }
 ```
+
+# 2-2 ルーティングの追加
+
+## 1. 認証関連のルーティングの追加
+
++ `server/routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes(); // 追加
+Route::get('/', [ArticleController::class, 'index']);
+```
