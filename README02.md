@@ -92,3 +92,33 @@ class CreateUsersTable extends Migration
 ## 5. マイグレーションの実行
 
 + `$ php artisan migrate`を実行<br>
+
+# 1-6 記事モデルの作成
+
+## 1. 記事モデルの作成
+
++ `$ php artisan make:model Article`を実行<br>
+
+## 2. リレーションの追加
+
++ `server/app/Models/Article.php`を編集<br>
+
+```php:Article.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Article extends Model
+{
+    use HasFactory;
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo('App/Models/User');
+    }
+}
+```
