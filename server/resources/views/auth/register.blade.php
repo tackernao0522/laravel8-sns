@@ -12,13 +12,16 @@
                         <h2 class="h3 card-title text-center mt-2">ユーザー登録</h2>
 
                         <div class="card-text">
+
+                            @include('error_card_list')
+
                             <form method="POST" action="{{ route('register') }}">
                                 @csrf
                                 <div class="md-form">
                                     <label for="name">ユーザー名</label>
                                     <input type="text" id="name" name="name" class="form-control" required
                                         value="{{ old('name') }}">
-                                    <small>英数字3〜6文字(登録後の変更はできません)</small>
+                                    <small>英数字3〜16文字(登録後の変更はできません)</small>
                                 </div>
                                 <div class="md-form">
                                     <label for="email">メールアドレス</label>
