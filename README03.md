@@ -136,3 +136,19 @@ return [
 
 ];
 ```
+
+# 4-2 ルーティングの追加
+
++ `routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes();
+Route::get('/', [ArticleController::class, 'index'])->name('articles.index'); // 編集
+Route::resource('articles', ArticleController::class)->except(['index']); // 追加
+```
