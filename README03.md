@@ -152,3 +152,151 @@ Auth::routes();
 Route::get('/', [ArticleController::class, 'index'])->name('articles.index'); // 編集
 Route::resource('articles', ArticleController::class)->except(['index']); // 追加
 ```
+
+# 4-3 記事投稿画面の作成と未ログイン時の考慮
+
++ `src/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Article;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create() // 追加
+    {
+        return view('articles.create');
+    }
+}
+```
+
++ `$ touch resources/views/articles/create.blade.php`を実行<br>
+
++ `resources/views/articles/create.blade.php`を編集<br>
+
+```html:create.blade.php
+@extends('app')
+
+@section('title', '記事投稿')
+
+@include('nav')
+
+@section('content')
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="card mt-3">
+                    <div class="card-body pt-0">
+                        @include('error_card_list')
+                        <div class="card-text">
+                            <form method="POST" action="{{ route('articles.store') }}">
+                                @include('articles.form')
+                                <button class="btn blue-gradient btn-block">
+                                    投稿する
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```
+
++ `touch resources/views/articles/form.blade.php`を実行<br>
+
++ `resources/views/articles/form.blade.php`を編集<br>
+
+```html:form.blade.php
+@csrf
+<div class="md-form">
+    <label>タイトル</label>
+    <input type="text" name="title" class="form-control" value="{{ old('title') }}" required>
+</div>
+<div class="form-group">
+    <label></label>
+    <textarea name="body" class="form-control" rows="16" placeholder="本文" required>{{ old('body') }}</textarea>
+</div>
+```
+
++ `resources/views/nav.blade.php`を編集<br>
+
+```html:nav.blade.php
+<nav class="navbar navbar-expand navbar-dark blue-gradient">
+
+    <a href="/" class="navbar-brand"><i class="far fa-sticky-not mr-1"></i>memo</a>
+
+    <ul class="navbar-nav ml-auto">
+
+        @guest
+            <li class="nav-item">
+                <a href="{{ route('register') }}" class="nav-link">ユーザー登録</a>
+            </li>
+        @endguest
+
+        @guest
+            <li class="nav-item">
+                <a href="{{ route('login') }}" class="nav-link">ログイン</a>
+            </li>
+        @endguest
+
+        @auth
+            <li class="nav-item">
+                {{-- 編集 --}}
+                <a href="{{ route('articles.create') }}" class="nav-link"><i class="fas fa-pen mr-1"></i>投稿する</a>
+            </li>
+        @endauth
+
+        @auth
+            {{-- Dropdown --}}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+                    <button class="dropdown-item type="button" onclick="location.href="">
+                        マイページ
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button form="logout-button" class="dropdown-item" type="submit">
+                        ログアウト
+                    </button>
+                </div>
+            </li>
+            <form action="{{ route('logout') }}" id="logout-button" method="POST">
+                @csrf
+            </form>
+            {{-- Dropdown --}}
+        @endauth
+    </ul>
+</nav>
+```
+
+## 5. 未ログイン時の考慮
+
++ `routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes();
+Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
+Route::resource('articles', ArticleController::class)->except(['index'])->middleware('auth'); // 編集
+```
