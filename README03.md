@@ -348,3 +348,111 @@ class ArticleRequest extends FormRequest
     }
 }
 ```
+
+# 4-5 コントローラとモデルの編集
+
+## 1. コントローラの編集
+
++ `src/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ArticleRequest;
+use App\Models\Article;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create()
+    {
+        return view('articles.create');
+    }
+
+    public function store(ArticleRequest $request, Article $article)
+    {
+        $article->title = $request->title;
+        $article->body = $request->body;
+        $article->user_id = $request->user()->id;
+        $article->save();
+
+        return redirect()->route('articles.index');
+    }
+}
+```
+
+## 3. fillableの利用
+
++ `server/app/Models/Article.php`を編集<br>
+
+```php:Article.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Article extends Model
+{
+    use HasFactory;
+
+    // 追加
+    protected $fillable = [
+        'title',
+        'body',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+}
+```
+
++ `server/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ArticleRequest;
+use App\Models\Article;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create()
+    {
+        return view('articles.create');
+    }
+
+    public function store(ArticleRequest $request, Article $article)
+    {
+        // 編集
+        $article->fill($request->all());
+        $article->user_id = $request->user()->id;
+        $article->save();
+
+        return redirect()->route('articles.index');
+    }
+}
+```
