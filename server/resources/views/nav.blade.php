@@ -18,7 +18,7 @@
 
         @auth
             <li class="nav-item">
-                <a href="" class="nav-link"><i class="fas fa-pen mr-1"></i>投稿する</a>
+                <a href="{{ route('articles.create') }}" class="nav-link"><i class="fas fa-pen mr-1"></i>投稿する</a>
             </li>
         @endauth
 
