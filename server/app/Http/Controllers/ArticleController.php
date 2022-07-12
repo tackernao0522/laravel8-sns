@@ -33,4 +33,18 @@ class ArticleController extends Controller
     {
         return view('articles.edit', compact('article'));
     }
+
+    public function update(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all())->save();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function destroy(Article $article)
+    {
+        $article->delete();
+
+        return redirect()->route('articles.index');
+    }
 }
