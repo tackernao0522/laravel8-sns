@@ -3,11 +3,16 @@
 +--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+---------------------------------------------+
 |        | GET|HEAD  | /                       | articles.index   | App\Http\Controllers\ArticleController@index                           | web                                         |
 |        | POST      | articles                | articles.store   | App\Http\Controllers\ArticleController@store                           | web                                         |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
 |        | GET|HEAD  | articles/create         | articles.create  | App\Http\Controllers\ArticleController@create                          | web                                         |
-|        | GET|HEAD  | articles/{article}      | articles.show    | App\Http\Controllers\ArticleController@show                            | web                                         |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
 |        | PUT|PATCH | articles/{article}      | articles.update  | App\Http\Controllers\ArticleController@update                          | web                                         |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
 |        | DELETE    | articles/{article}      | articles.destroy | App\Http\Controllers\ArticleController@destroy                         | web                                         |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
+|        | GET|HEAD  | articles/{article}      | articles.show    | App\Http\Controllers\ArticleController@show                            | web                                         |
 |        | GET|HEAD  | articles/{article}/edit | articles.edit    | App\Http\Controllers\ArticleController@edit                            | web                                         |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
 |        | GET|HEAD  | login                   | login            | App\Http\Controllers\Auth\LoginController@showLoginForm                | web                                         |
 |        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated |
 |        | POST      | login                   |                  | App\Http\Controllers\Auth\LoginController@login                        | web                                         |
