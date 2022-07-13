@@ -1,34 +1,41 @@
-+--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+---------------------------------------------+
-| Domain | Method    | URI                     | Name             | Action                                                                 | Middleware                                  |
-+--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+---------------------------------------------+
-|        | GET|HEAD  | /                       | articles.index   | App\Http\Controllers\ArticleController@index                           | web                                         |
-|        | POST      | articles                | articles.store   | App\Http\Controllers\ArticleController@store                           | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | GET|HEAD  | articles/create         | articles.create  | App\Http\Controllers\ArticleController@create                          | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | PUT|PATCH | articles/{article}      | articles.update  | App\Http\Controllers\ArticleController@update                          | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | DELETE    | articles/{article}      | articles.destroy | App\Http\Controllers\ArticleController@destroy                         | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | GET|HEAD  | articles/{article}      | articles.show    | App\Http\Controllers\ArticleController@show                            | web                                         |
-|        | GET|HEAD  | articles/{article}/edit | articles.edit    | App\Http\Controllers\ArticleController@edit                            | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | GET|HEAD  | login                   | login            | App\Http\Controllers\Auth\LoginController@showLoginForm                | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated |
-|        | POST      | login                   |                  | App\Http\Controllers\Auth\LoginController@login                        | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated |
-|        | POST      | logout                  | logout           | App\Http\Controllers\Auth\LoginController@logout                       | web                                         |
-|        | GET|HEAD  | password/confirm        | password.confirm | App\Http\Controllers\Auth\ConfirmPasswordController@showConfirmForm    | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | POST      | password/confirm        |                  | App\Http\Controllers\Auth\ConfirmPasswordController@confirm            | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate            |
-|        | POST      | password/email          | password.email   | App\Http\Controllers\Auth\ForgotPasswordController@sendResetLinkEmail  | web                                         |
-|        | GET|HEAD  | password/reset          | password.request | App\Http\Controllers\Auth\ForgotPasswordController@showLinkRequestForm | web                                         |
-|        | POST      | password/reset          | password.update  | App\Http\Controllers\Auth\ResetPasswordController@reset                | web                                         |
-|        | GET|HEAD  | password/reset/{token}  | password.reset   | App\Http\Controllers\Auth\ResetPasswordController@showResetForm        | web                                         |
-|        | GET|HEAD  | register                | register         | App\Http\Controllers\Auth\RegisterController@showRegistrationForm      | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated |
-|        | POST      | register                |                  | App\Http\Controllers\Auth\RegisterController@register                  | web                                         |
-|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated |
-|        | GET|HEAD  | sanctum/csrf-cookie     |                  | Laravel\Sanctum\Http\Controllers\CsrfCookieController@show             | web                                         |
-+--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+---------------------------------------------+
++--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------+
+| Domain | Method    | URI                     | Name             | Action                                                                 | Middleware                                                      |
++--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------+
+|        | GET|HEAD  | /                       | articles.index   | App\Http\Controllers\ArticleController@index                           | web                                                             |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:viewAny,App\Models\Article |
+|        | POST      | articles                | articles.store   | App\Http\Controllers\ArticleController@store                           | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:create,App\Models\Article  |
+|        | GET|HEAD  | articles/create         | articles.create  | App\Http\Controllers\ArticleController@create                          | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:create,App\Models\Article  |
+|        | PUT|PATCH | articles/{article}      | articles.update  | App\Http\Controllers\ArticleController@update                          | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:update,article             |
+|        | DELETE    | articles/{article}      | articles.destroy | App\Http\Controllers\ArticleController@destroy                         | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:delete,article             |
+|        | GET|HEAD  | articles/{article}      | articles.show    | App\Http\Controllers\ArticleController@show                            | web                                                             |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:view,article               |
+|        | GET|HEAD  | articles/{article}/edit | articles.edit    | App\Http\Controllers\ArticleController@edit                            | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:update,article             |
+|        | GET|HEAD  | login                   | login            | App\Http\Controllers\Auth\LoginController@showLoginForm                | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
+|        | POST      | login                   |                  | App\Http\Controllers\Auth\LoginController@login                        | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
+|        | POST      | logout                  | logout           | App\Http\Controllers\Auth\LoginController@logout                       | web                                                             |
+|        | GET|HEAD  | password/confirm        | password.confirm | App\Http\Controllers\Auth\ConfirmPasswordController@showConfirmForm    | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        | POST      | password/confirm        |                  | App\Http\Controllers\Auth\ConfirmPasswordController@confirm            | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        | POST      | password/email          | password.email   | App\Http\Controllers\Auth\ForgotPasswordController@sendResetLinkEmail  | web                                                             |
+|        | GET|HEAD  | password/reset          | password.request | App\Http\Controllers\Auth\ForgotPasswordController@showLinkRequestForm | web                                                             |
+|        | POST      | password/reset          | password.update  | App\Http\Controllers\Auth\ResetPasswordController@reset                | web                                                             |
+|        | GET|HEAD  | password/reset/{token}  | password.reset   | App\Http\Controllers\Auth\ResetPasswordController@showResetForm        | web                                                             |
+|        | GET|HEAD  | register                | register         | App\Http\Controllers\Auth\RegisterController@showRegistrationForm      | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
+|        | POST      | register                |                  | App\Http\Controllers\Auth\RegisterController@register                  | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
+|        | GET|HEAD  | sanctum/csrf-cookie     |                  | Laravel\Sanctum\Http\Controllers\CsrfCookieController@show             | web                                                             |
++--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------+

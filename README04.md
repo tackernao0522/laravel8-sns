@@ -294,3 +294,285 @@ class ArticleController extends Controller
     </div>
 @endsection
 ```
+
+# 5-5 記事更新と記事削除への認可の考慮
+
+## 1. ポリシーの作成
+
+|ポリシーのメソッド|コントローラのアクションメソッド|
+|:---:|:---:|
+|viewAny|index|
+|view|show|
+|create|create, store|
+|update|edit, update|
+|destroy|destroy|
+
++ `$ php artisan make:policy ArticlePolicy --model=Article`を実行<br>
+
++ `server/app/Policies/ArticlePolicy.php`を編集<br>
+
+```php:ArticlePolicy.php
+<?php
+
+namespace App\Policies;
+
+use App\Models\Article;
+use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class ArticlePolicy
+{
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any models.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function viewAny(User $user)
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function view(User $user, Article $article)
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function create(User $user)
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function update(User $user, Article $article)
+    {
+        return $user->id === $article->user_id;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function delete(User $user, Article $article)
+    {
+        return $user->id === $article->user_id;
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function restore(User $user, Article $article)
+    {
+        //
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function forceDelete(User $user, Article $article)
+    {
+        //
+    }
+}
+```
+
+## 3. ポリシーをコントローラで使用する
+
++ `server/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ArticleRequest;
+use App\Models\Article;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    // 追加
+    public function __construct()
+    {
+        $this->authorizeResource(Article::class, 'article');
+    }
+
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create()
+    {
+        return view('articles.create');
+    }
+
+    public function store(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all());
+        $article->user_id = $request->user()->id;
+        $article->save();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function edit(Article $article)
+    {
+        return view('articles.edit', compact('article'));
+    }
+
+    public function update(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all())->save();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function destroy(Article $article)
+    {
+        $article->delete();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function show(Article $article)
+    {
+        return view('articles.show', compact('article'));
+    }
+}
+```
+
+## 3. 未ログインユーザーを考慮する
+
++ `server/app/Policies/ArticlePolicy.php`を編集<br>
+
+```php:ArticlePolicy.php
+<?php
+
+namespace App\Policies;
+
+use App\Models\Article;
+use App\Models\User;
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class ArticlePolicy
+{
+    use HandlesAuthorization;
+
+    /**
+     * Determine whether the user can view any models.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function viewAny(?User $user)　// ?をつける
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can view the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function view(?User $user, Article $article) // ?をつける
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can create models.
+     *
+     * @param  \App\Models\User  $user
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function create(User $user)
+    {
+        return true;
+    }
+
+    /**
+     * Determine whether the user can update the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function update(User $user, Article $article)
+    {
+        return $user->id === $article->user_id;
+    }
+
+    /**
+     * Determine whether the user can delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function delete(User $user, Article $article)
+    {
+        return $user->id === $article->user_id;
+    }
+
+    /**
+     * Determine whether the user can restore the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function restore(User $user, Article $article)
+    {
+        //
+    }
+
+    /**
+     * Determine whether the user can permanently delete the model.
+     *
+     * @param  \App\Models\User  $user
+     * @param  \App\Models\Article  $article
+     * @return \Illuminate\Auth\Access\Response|bool
+     */
+    public function forceDelete(User $user, Article $article)
+    {
+        //
+    }
+}
+```
