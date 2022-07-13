@@ -153,3 +153,195 @@ return [
 
 memo({{ url(config('app.url')) }})
 ```
+
+# 6-6 パスワード再設定メール(テキスト版)の送信処理の作成
+
+## 1. Mailableクラスを継承したクラスの作成
+
++ `$ php artisan make:mail BareMail`を実行<br>
+
++ `server/app/Mail/BareMail.php`を編集<br>
+
+```php:BareMail.php
+<?php
+
+namespace App\Mail;
+
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Mail\Mailable;
+use Illuminate\Queue\SerializesModels;
+
+class BareMail extends Mailable
+{
+    use Queueable, SerializesModels;
+
+    /**
+     * Create a new message instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        //
+    }
+
+    /**
+     * Build the message.
+     *
+     * @return $this
+     */
+    public function build()
+    {
+        return $this; // 編集
+    }
+}
+```
+
+## 2. 通知クラスの作成
+
++ `$ php artisan make:notification PasswordResetNotification`を実行<br>
+
++ `server/app/Nofifications/PasswordResetNotification.php`を編集<br>
+
+```php:PasswordResetNotification.php
+<?php
+
+namespace App\Notifications;
+
+use App\Mail\BareMail; // 追加
+use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Notifications\Notification;
+
+class PasswordResetNotification extends Notification
+{
+    use Queueable;
+
+    public $token; // 追加
+    public $mail; // 追加
+
+    /**
+     * Create a new notification instance.
+     *
+     * @return void
+     */
+    // 編集
+    public function __construct(string $token, BareMail $mail)
+    {
+        $this->token = $token;
+        $this->mail = $mail;
+    }
+    // ここまで
+
+    /**
+     * Get the notification's delivery channels.
+     *
+     * @param  mixed  $notifiable
+     * @return array
+     */
+    public function via($notifiable)
+    {
+        return ['mail'];
+    }
+
+    /**
+     * Get the mail representation of the notification.
+     *
+     * @param  mixed  $notifiable
+     * @return \Illuminate\Notifications\Messages\MailMessage
+     */
+    // 編集
+    public function toMail($notifiable)
+    {
+        return $this->mail
+            ->from(config('mail.from.address'), config('mail.from.name'))
+            ->to($notifiable->email)
+            ->subject('[memo]パスワード再設定')
+            ->text('emails.password_reset')
+            ->with([
+                'url' => route('password.reset', [
+                    'token' => $this->token,
+                    'email' => $notifiable->email,
+                ]),
+                'count' => config(
+                    'auth.passwords.' .
+                        config('auth.defaults.passwords') .
+                        '.expire'
+                ),
+            ]);
+    }
+    // ここまで
+
+    /**
+     * Get the array representation of the notification.
+     *
+     * @param  mixed  $notifiable
+     * @return array
+     */
+    public function toArray($notifiable)
+    {
+        return [
+            //
+        ];
+    }
+}
+```
+
++ `server/app/Models/User.php`を編集<br>
+
+```php:User.php
+<?php
+
+namespace App\Models;
+
+use App\Mail\BareMail; // 追加
+use App\Notifications\PasswordResetNotification; // 追加
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+    ];
+
+    // 追加
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new PasswordResetNotification($token, new BareMail()));
+    }
+}
+```
