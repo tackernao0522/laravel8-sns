@@ -133,3 +133,23 @@ return [
 
 ];
 ```
+
+# 6-5 パスワード再設定メール(テキスト版)のテンプレート作成
+
++ `$ mkdir resources/views/emails && touch $_/password_reset.blade.php`を実行<br>
+
++ `resources/views/emails/password_reset.blade.php`を編集<br>
+
+```html:password_reset.blade.php
+下記のURLからパスワードの再設定を行なって下さい。
+
+{{ $url }}
+
+このURLの有効期間は{{ $count }}分です。
+
+このメールに心当たりがない場合は、第三者がメールアドレスの入力を誤った可能性があります。
+
+その場合は、このメールは破棄していただいて結構です。
+
+memo({{ url(config('app.url')) }})
+```
