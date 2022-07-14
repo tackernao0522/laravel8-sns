@@ -55,3 +55,83 @@ class CreateLikesTable extends Migration
 ## 2. likesテーブルの作成<br>
 
 + `php artisan migrate`を実行<br>
+
+# 7-4 ユーザーが記事をいいね済みかを判定する
+
+## 1. 記事モデルにリレーションを追加する
+
++ `server/app/Models/Article.php`を編集<br>
+
+```php:Article.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Article extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'body',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo('App\Models\User');
+    }
+
+    // 追加
+    public function likes(): BelongsToMany
+    {
+        return $this->belongsToMany('App\Models\User', 'likes')->withTimestamps();
+    }
+}
+```
+
+## 2. あるユーザーがいいね済みがどうかを判定するメソッドを作成する
+
++ `server/app/Models/Article.php`を編集<br>
+
+```php:Article.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Article extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'body',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo('App\Models\User');
+    }
+
+    public function likes(): BelongsToMany
+    {
+        return $this->belongsToMany('App\Models\User', 'likes')->withTimestamps();
+    }
+
+    public function isLikedBy(?User $user): bool
+    {
+        return $user
+            ? (bool)$this->likes->where('id', $user->id)->count()
+            : false;
+    }
+}
+```
