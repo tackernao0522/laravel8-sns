@@ -396,3 +396,169 @@ class User extends Authenticatable
     </div>
 @endsection
 ```
+
+# 7-2 VueコンポーネントをBladeに組み込む
+
+## 1. Vue.jsをインストールする
+
++ `$ npm i -D vue@2.6.11 vue-template-compiler@2.6.11`を実行<br>
+
++ `$ mkdir resources/js/components && touch $_/ArticleLike.vue`を実行<br>
+
++ `server/resources/js/components/ArticleLike.vue`を編集<br>
+
+```vue:ArticleLike.vue
+<template>
+  <div>
+    <button type="button" class="btn m-0 p-1 shadow-none">
+      <i class="fas fa-heart mr-1" />
+    </button>
+    10
+  </div>
+</template>
+
+<script>
+</script>
+```
+
++ `server/resources/js/app.js`を編集<br>
+
+```js:app.js
+import './bootstrap'
+import Vue from 'vue'
+import ArticleLike from './components/ArticleLike'
+
+const app = new Vue({
+  el: "#app",
+  components: {
+    ArticleLike,
+  }
+})
+```
+
+※ vue.js コンパイル失敗時 参考: https://qiita.com/masa___i/items/c2b2174c4540a5f0cee6 <br>
+
+
++ `server/resources/views/app.blade.php`を編集<br>
+
+```html:app.blade.php
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>
+        @yield('title')
+    </title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.2/css/all.css">
+    <!-- Bootstrap core CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Material Design Bootstrap -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/css/mdb.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- 編集 -->
+    <div id="app">
+        @yield('content')
+    </div>
+
+    <!-- 追加 -->
+    <script src="{{ mix('js/app.js') }}"></script>
+
+    <!-- JQuery -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <!-- Bootstrap tooltips -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.4/umd/popper.min.js"></script>
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js">
+    </script>
+    <!-- MDB core JavaScript -->
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdbootstrap/4.8.11/js/mdb.min.js"></script>
+</body>
+
+</html>
+```
+
++ `server/resources/views/articles/card.blade.php`を編集<br>
+
+```html:card.blade.php
+<div class="card mt-3">
+    <div class="card-body d-flex flex-row">
+        <i class="fas fa-user-circle fa-3x mr-1"></i>
+        <div>
+            <div class="font-weight-bold">{{ $article->user->name }}</div>
+            <div class="font-weight-lighter">{{ $article->created_at->format('Y/m/d H:i') }}</div>
+        </div>
+
+        @if (Auth::id() === $article->user_id)
+            <!-- dropdown -->
+            <div class="ml-auto card-text">
+                <div class="dropdown">
+                    <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{ route('articles.edit', $article->id) }}">
+                            <i class="fas fa-pen mr-1"></i>記事を更新する
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" data-toggle="modal"
+                            data-target="#modal-delete-{{ $article->id }}">
+                            <i class="fas fa-trash-alt mr-1"></i>記事を削除する
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- dropdown -->
+
+            <!-- modal -->
+            <div id="modal-delete-{{ $article->id }}" class="modal fade" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <form method="POST" action="{{ route('articles.destroy', $article->id) }}">
+                            @csrf
+                            @method('DELETE')
+                            <div class="modal-body">
+                                {{ $article->title }}を削除します。よろしいですか？
+                            </div>
+                            <div class="modal-footer justify-content-between">
+                                <a class="btn btn-outline-grey" data-dismiss="modal">キャンセル</a>
+                                <button type="submit" class="btn btn-danger">削除する</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- modal -->
+        @endif
+
+    </div>
+    <!-- 編集 -->
+    <div class="card-body pt-0 pb-2">
+        <h3 class="h4 card-title">
+            <a class="text-dark" href="{{ route('articles.show', ['article' => $article]) }}">
+                {{ $article->title }}
+            </a>
+        </h3>
+        <div class="card-text">
+            {!! nl2br(e($article->body)) !!}
+        </div>
+    </div>
+    <div class="card-body pt-0 pb-2 pl-3">
+        <div class="card-text">
+            <article-like>
+            </article-like>
+        </div>
+    </div>
+    <!-- ここまで -->
+</div>
+```
