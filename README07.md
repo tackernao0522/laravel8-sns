@@ -1,3 +1,56 @@
+# 7-6 いいね数を算出して Blade を通じて Vue を渡す
+
+## 1. 現在のいいね数を算出するメソッドを作る
+
++ `server/app/Models/Article.php`を編集<br>
+
+```php:Article.php
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Article extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'title',
+        'body',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo('App\Models\User');
+    }
+
+    public function likes(): BelongsToMany
+    {
+        return $this->belongsToMany('App\Models\User', 'likes')->withTimestamps();
+    }
+
+    public function isLikedBy(?User $user): bool
+    {
+        return $user
+            ? (bool)$this->likes->where('id', $user->id)->count()
+            : false;
+    }
+
+    // 追加
+    public function getCountLikesAttribute(): int
+    {
+        return $this->likes->count();
+    }
+}
+```
+
++ `server/resources/views/articles/card.blade.php`を編集<br>
+
+```html:card.blade.php
 <div class="card mt-3">
     <div class="card-body d-flex flex-row">
         <i class="fas fa-user-circle fa-3x mr-1"></i>
@@ -66,9 +119,47 @@
     </div>
     <div class="card-body pt-0 pb-2 pl-3">
         <div class="card-text">
+            <!-- 編集 -->
             <article-like :initial-is-liked-by="@json($article->isLikedBy(Auth::user()))"
                 :initial-count-likes="@json($article->count_likes)">
             </article-like>
         </div>
     </div>
 </div>
+```
+
++ `server/resources/js/components/ArticleLike.vue`を編集<br>
+
+```vue:ArticleLike.vue
+<template>
+  <div>
+    <button type="button" class="btn m-0 p-1 shadow-none">
+      <i class="fas fa-heart mr-1" :class="{ 'red-text': this.isLikedBy }" />
+    </button>
+    // 追加
+    {{ countLikes }}
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    initialIsLikedBy: {
+      type: Boolean,
+      dafault: false,
+    },
+    // 追加
+    initialCountLikes: {
+      type: Number,
+      default: 0,
+    },
+  },
+  data() {
+    return {
+      isLikedBy: this.initialIsLikedBy,
+      countLikes: this.initialCountLikes, // 追加
+    };
+  },
+};
+</script>
+```
