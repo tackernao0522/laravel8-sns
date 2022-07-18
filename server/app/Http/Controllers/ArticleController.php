@@ -68,4 +68,14 @@ class ArticleController extends Controller
             'countLikes' => $article->count_likes
         ];
     }
+
+    public function unlike(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes,
+        ];
+    }
 }
