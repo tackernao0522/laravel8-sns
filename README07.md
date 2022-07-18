@@ -472,3 +472,80 @@ export default {
 @endauth
 <!-- 省略 -->
 ```
+
+# 7-9 いいねでハートをアニメーションさせる
+
+## 1. アニメーションさせるためのClass属性を付与する
+
++ `server/resources/js/components/ArticleLike.vue`を編集<br>
+
+```vue:ArticleLike.vue
+<template>
+  <div>
+    <button type="button" class="btn m-0 p-1 shadow-none">
+      <i
+        class="fas fa-heart mr-1"
+        :class="{
+          'red-text': this.isLikedBy,
+          'animated heartBeat fast': this.gotToLike, // 追加
+        }"
+        @click="clickLike"
+      />
+    </button>
+    {{ countLikes }}
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    initialIsLikedBy: {
+      type: Boolean,
+      dafault: false,
+    },
+    initialCountLikes: {
+      type: Number,
+      default: 0,
+    },
+    authorized: {
+      type: Boolean,
+      default: false,
+    },
+    endpoint: {
+      type: String,
+    },
+  },
+  data() {
+    return {
+      isLikedBy: this.initialIsLikedBy,
+      countLikes: this.initialCountLikes,
+      gotToLike: false, // 追加
+    };
+  },
+  methods: {
+    clickLike() {
+      if (!this.authorized) {
+        alert("いいね機能はログイン中のみ使用できます");
+        return;
+      }
+
+      this.isLikedBy ? this.unlike() : this.like();
+    },
+    async like() {
+      const response = await axios.put(this.endpoint);
+
+      this.isLikedBy = true;
+      this.countLikes = response.data.countLikes;
+      this.gotToLike = true; // 追加
+    },
+    async unlike() {
+      const response = await axios.delete(this.endpoint);
+
+      this.isLikedBy = false;
+      this.countLikes = response.data.countLikes;
+      this.gotToLike = false; // 追加
+    },
+  },
+};
+</script>
+```
