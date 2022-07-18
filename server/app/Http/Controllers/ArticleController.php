@@ -57,4 +57,15 @@ class ArticleController extends Controller
     {
         return view('articles.show', compact('article'));
     }
+
+    public function like(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+        $article->likes()->attach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes
+        ];
+    }
 }

@@ -20,6 +20,10 @@
 |        | GET|HEAD  | articles/{article}/edit | articles.edit    | App\Http\Controllers\ArticleController@edit                            | web                                                             |
 |        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
 |        |           |                         |                  |                                                                        | Illuminate\Auth\Middleware\Authorize:update,article             |
+|        | PUT       | articles/{article}/like | articles.like    | App\Http\Controllers\ArticleController@like                            | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        | DELETE    | articles/{article}/like | articles.unlike  | App\Http\Controllers\ArticleController@unlike                          | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
 |        | GET|HEAD  | login                   | login            | App\Http\Controllers\Auth\LoginController@showLoginForm                | web                                                             |
 |        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
 |        | POST      | login                   |                  | App\Http\Controllers\Auth\LoginController@login                        | web                                                             |

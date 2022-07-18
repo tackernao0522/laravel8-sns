@@ -163,3 +163,109 @@ export default {
 };
 </script>
 ```
+
+# 7-7 いいねでテーブルを更新して結果をレスポンスする
+
+## 1. いいね機能のルーティングを追加する
+
++ `server/routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes();
+Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
+Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
+Route::resource('/articles', ArticleController::class)->only('show');
+// 追加
+Route::prefix('articles')->name('articles.')->group(function () {
+  Route::put('/{article}/like', [ArticleController::class, 'like'])->name('like')->middleware('auth');
+  Route::delete('/{article}/like', [ArticleController::class, 'unlike'])->name('unlike')->middleware('auth');
+});
+// ここまで
+```
+
+## 2. コントローラにいいね機能のアクションメソッドを追加する
+
++ `server/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ArticleRequest;
+use App\Models\Article;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function __construct()
+    {
+        $this->authorizeResource(Article::class, 'article');
+    }
+
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create()
+    {
+        return view('articles.create');
+    }
+
+    public function store(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all());
+        $article->user_id = $request->user()->id;
+        $article->save();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function edit(Article $article)
+    {
+        return view('articles.edit', compact('article'));
+    }
+
+    public function update(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all())->save();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function destroy(Article $article)
+    {
+        $article->delete();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function show(Article $article)
+    {
+        return view('articles.show', compact('article'));
+    }
+
+    // 追加
+    public function like(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+        $article->likes()->attach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes
+        ];
+    }
+}
+```
+
+[attach/detach - Laravel公式](https://readouble.com/laravel/6.x/ja/eloquent-relationships.html#updating-many-to-many-relationships) <br>
