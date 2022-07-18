@@ -265,7 +265,210 @@ class ArticleController extends Controller
             'countLikes' => $article->count_likes
         ];
     }
+
+    public function unlike(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes,
+        ];
+    }
+    // ここまで
 }
 ```
 
 [attach/detach - Laravel公式](https://readouble.com/laravel/6.x/ja/eloquent-relationships.html#updating-many-to-many-relationships) <br>
+
+# 7-8 VueからLaravelに非同期通信する
+
+## 1. ログイン状態と非同期通信URLをBladeからVueコンポーネントに渡す
+
++ `server/resources/views/articles/card.blade.php`を編集<br>
+
+```html:card.blade.php
+<div class="card mt-3">
+    <div class="card-body d-flex flex-row">
+        <i class="fas fa-user-circle fa-3x mr-1"></i>
+        <div>
+            <div class="font-weight-bold">{{ $article->user->name }}</div>
+            <div class="font-weight-lighter">{{ $article->created_at->format('Y/m/d H:i') }}</div>
+        </div>
+
+        @if (Auth::id() === $article->user_id)
+            <!-- dropdown -->
+            <div class="ml-auto card-text">
+                <div class="dropdown">
+                    <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{ route('articles.edit', $article->id) }}">
+                            <i class="fas fa-pen mr-1"></i>記事を更新する
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" data-toggle="modal"
+                            data-target="#modal-delete-{{ $article->id }}">
+                            <i class="fas fa-trash-alt mr-1"></i>記事を削除する
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- dropdown -->
+
+            <!-- modal -->
+            <div id="modal-delete-{{ $article->id }}" class="modal fade" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <form method="POST" action="{{ route('articles.destroy', $article->id) }}">
+                            @csrf
+                            @method('DELETE')
+                            <div class="modal-body">
+                                {{ $article->title }}を削除します。よろしいですか？
+                            </div>
+                            <div class="modal-footer justify-content-between">
+                                <a class="btn btn-outline-grey" data-dismiss="modal">キャンセル</a>
+                                <button type="submit" class="btn btn-danger">削除する</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- modal -->
+        @endif
+
+    </div>
+    <div class="card-body pt-0 pb-2">
+        <h3 class="h4 card-title">
+            <a class="text-dark" href="{{ route('articles.show', ['article' => $article]) }}">
+                {{ $article->title }}
+            </a>
+        </h3>
+        <div class="card-text">
+            {!! nl2br(e($article->body)) !!}
+        </div>
+    </div>
+    <div class="card-body pt-0 pb-2 pl-3">
+        <div class="card-text">
+            <!-- 編集 -->
+            <article-like :initial-is-liked-by="@json($article->isLikedBy(Auth::user()))"
+                :initial-count-likes="@json($article->count_likes)" :authorized='@json(Auth::check())'
+                endpoint="{{ route('articles.like', $article->id) }}">
+            <!-- ここまで -->
+            </article-like>
+        </div>
+    </div>
+</div>
+```
+
++ `server/resources/js/components/ArticleLike.vue`を編集<br>
+
+```vue:ArticleLike.vue
+<template>
+  <div>
+    <button type="button" class="btn m-0 p-1 shadow-none">
+      <i
+        class="fas fa-heart mr-1"
+        :class="{ 'red-text': this.isLikedBy }"
+        @click="clickLike" // 追加
+      />
+    </button>
+    {{ countLikes }}
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    initialIsLikedBy: {
+      type: Boolean,
+      dafault: false,
+    },
+    initialCountLikes: {
+      type: Number,
+      default: 0,
+    },
+    // 追加
+    authorized: {
+      type: Boolean,
+      default: false,
+    },
+    endpoint: {
+      type: String,
+    },
+    // ここまで
+  },
+  data() {
+    return {
+      isLikedBy: this.initialIsLikedBy,
+      countLikes: this.initialCountLikes,
+    };
+  },
+  // 追加
+  methods: {
+    clickLike() {
+      if (!this.authorized) {
+        alert("いいね機能はログイン中のみ使用できます");
+        return;
+      }
+      this.isLikedBy ? this.unlike() : this.like();
+    },
+    async like() {
+      const response = await axios.put(this.endpoint);
+
+      this.isLikedBy = true;
+      this.countLikes = response.data.countLikes;
+    },
+    async unlike() {
+      const response = await axios.delete(this.endpoint);
+
+      this.isLikedBy = false;
+      this.countLikes = response.data.countLikes;
+    },
+  },
+  // ここまで
+};
+</script>
+```
+
+[条件（三項）演算子 - MDN](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/Conditional_Operator) <br>
+
+[async/await入門 - async/awaitとは | CodeGrid](https://app.codegrid.net/entry/2017-async-await-1) <br>
+
+
++ `server/resources/views/nav.blade.php`を修正<br>
+
+```html:nav.blade.php
+<!-- 省略 -->
+@auth
+    {{-- Dropdown --}}
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+            aria-expanded="false">
+            <i class="fas fa-user-circle"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-right dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+            <!-- 修正 -->
+            <button class="dropdown-item" type="button" onclick="location.href=''">
+            <!-- ここまで -->
+                マイページ
+            </button>
+            <div class="dropdown-divider"></div>
+            <button form="logout-button" class="dropdown-item" type="submit">
+                ログアウト
+            </button>
+        </div>
+    </li>
+    <form action="{{ route('logout') }}" id="logout-button" method="POST">
+        @csrf
+    </form>
+    {{-- Dropdown --}}
+@endauth
+<!-- 省略 -->
+```
