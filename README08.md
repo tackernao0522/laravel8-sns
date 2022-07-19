@@ -198,3 +198,109 @@ export default {
 
 JSON.strigifyメソッドを使って、データ tags をJSON形式の文字列に変換したものを返しています。
 参考: [JSON.stringify() - MDN](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify) <br>
+
+# 8-4 タグ関連のテーブルを作成する
+
+## 1. タグテーブルのマイグレーションファイルの作成
+
+|カラム名|属性|役割|
+|:---:|:---:|:---:|
+|id|整数|タグを識別するID|
+|name|文字列/ユニーク制約|タグ名|
+|created_at|日付と時刻|作成日時|
+|updated_at|日付と時刻|更新日時|
+
++ `$ php artisan make:migration create_tags_table --create=tags`を実行<br>
+
++ `server/database/migrations/create_tags_table.php`を編集<br>
+
+```php:create_tags_table.blade.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateTagsTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('tags', function (Blueprint $table) {
+            $table->id();
+            $table->string('name')->unique();
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('tags');
+    }
+}
+```
+
+参考: [インデックス作成 - Laravel公式](https://readouble.com/laravel/6.x/ja/migrations.html#creating-indexes) <br>
+
+## 2. 記事とタグの中間テーブルのマイグレーションファイルの作成
+
+|カラム名|属性|役割|
+|:---:|:---:|:---:|
+|id|整数|タグの紐付けを識別するID|
+|article_id|整数|タグが付けられた記事のid|
+|tag_id|整数|記事に付けられたタグのid|
+|created_at|日付と時刻|作成日時|
+|updated_st|日付と時刻|更新日時|
+
++ `$ php artisan make:migration create_article_tag_table --create=article_tag`を実行<br>
+
++ `server/database/migrations/create_article_tag_table.php`を編集<br>
+
+```php:create_article_tag_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateArticleTagTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('article_tag', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('article_id')->constrained()->onDelete('cascade');
+            $table->foreignId('tag_id')->constrained()->onDelete('cascade');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('article_tag');
+    }
+}
+```
+
+## 3. テーブルをデータベースに作成する
+
++ `$ php artisan migrate`を実行<br>
