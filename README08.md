@@ -115,3 +115,86 @@ const app = new Vue({
     <textarea name="body" class="form-control" rows="16" placeholder="本文" required>{{ $article->body ?? old('body') }}</textarea>
 </div>
 ```
+
+# 8-3 入力されたタグをBladeからPOST送信可能にする
+
++ `server/resources/js/components/ArticleTagsInput.vue`を編集<br>
+
+```vue:ArticleTagsInput.vue
+<template>
+  <div>
+    <input type="hidden" name="tags" :value="tagsJson" /> // 追加
+    <vue-tags-input
+      v-model="tag"
+      :tags="tags"
+      placeholder="タグを5個まで入力できます" // 追加
+      :autocomplete-items="filteredItems"
+      @tags-changed="(newTags) => (tags = newTags)"
+    />
+  </div>
+</template>
+
+<script>
+import VueTagsInput from "@johmun/vue-tags-input";
+
+export default {
+  components: {
+    VueTagsInput,
+  },
+  data() {
+    return {
+      tag: "",
+      tags: [],
+      autocompleteItems: [
+        {
+          text: "Spain",
+        },
+        {
+          text: "France",
+        },
+        {
+          text: "USA",
+        },
+        {
+          text: "Germany",
+        },
+        {
+          text: "China",
+        },
+      ],
+    };
+  },
+  computed: {
+    filteredItems() {
+      return this.autocompleteItems.filter((i) => {
+        return i.text.toLowerCase().indexOf(this.tag.toLowerCase()) !== -1;
+      });
+    },
+    // 追加
+    tagsJson() {
+      return JSON.stringify(this.tags);
+    },
+    // ここまで
+  },
+};
+</script>
+
+<style lang="css" scoped>
+.vue-tags-input {
+  max-width: inherit;
+}
+</style>
+<style lang="css">
+.vue-tags-input .ti-tag {
+  background: transparent;
+  border: 1px solid #747373;
+  color: #747373;
+  margin-right: 4px;
+  border-radius: 0px;
+  font-size: 13px;
+}
+</style>
+```
+
+JSON.strigifyメソッドを使って、データ tags をJSON形式の文字列に変換したものを返しています。
+参考: [JSON.stringify() - MDN](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/JSON/stringify) <br>
