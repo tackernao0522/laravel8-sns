@@ -363,3 +363,167 @@ class Article extends Model
     }
 }
 ```
+
+# 8-6 フォームリクエストの編集
+
+## 1. バリデーションルールの追加
+
++ `server/app/Http/Requests/ArticleRequest.php`を編集<br>
+
+```php:ArticleRequest.php
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class ArticleRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules()
+    {
+        return [
+            'title' => 'required|max:50',
+            'body' => 'required|max:500',
+            // 追加
+            'tags' => 'json|regex:/^(?!.*\s).+$/ulregex:/^(?!.*\/).*$/u',
+        ];
+    }
+
+    public function attributes()
+    {
+        return [
+            'title' => 'タイトル',
+            'body' => '本文',
+            // 追加
+            'tags' => 'タグ',
+        ];
+    }
+}
+```
+
+参考: [json - Laravel](https://readouble.com/laravel/6.x/ja/validation.html#rule-json) <br>
+
++ [regex:正規表現 - Laravel](https://readouble.com/laravel/6.x/ja/validation.html#rule-regex) <br>
++ [【5分でまるっと理解】 PHP正規表現の使い方まとめ](https://eng-entrance.com/php-regularex) <br>
++ [preg_match - PHP公式マニュアル](https://www.php.net/manual/ja/function.preg-match.php) <br>
+
+## 2. tagsの整形を行う
+
++ `server/app/Http/Requests/ArticleRequest.php`を編集<br>
+
+```php:ArticleRequest.php
+<?php
+
+namespace App\Http\Requests;
+
+use Illuminate\Foundation\Http\FormRequest;
+
+class ArticleRequest extends FormRequest
+{
+    /**
+     * Determine if the user is authorized to make this request.
+     *
+     * @return bool
+     */
+    public function authorize()
+    {
+        return true;
+    }
+
+    /**
+     * Get the validation rules that apply to the request.
+     *
+     * @return array
+     */
+    public function rules()
+    {
+        return [
+            'title' => 'required|max:50',
+            'body' => 'required|max:500',
+            'tags' => 'json|regex:/^(?!.*\s).+$/u|regex:/^(?!.*\/).*$/u',
+        ];
+    }
+
+    public function attributes()
+    {
+        return [
+            'title' => 'タイトル',
+            'body' => '本文',
+            'tags' => 'タグ',
+        ];
+    }
+
+    // 追加
+    public function passedValidation()
+    {
+        $this->tags = collect(json_decode($this->tags))
+            ->slice(0, 5)
+            ->map(function ($requestTag) {
+                return $requestTag->text;
+            });
+    }
+}
+```
+
+※ _passedValidationメソッド_ <br>
+
+`passedValidation`メソッドは、フォームリクエストのバリデーションが成功した後に自動的に呼ばれるメソッドです。<br>
+
+バリデーション成功後に何と処理をしたければ、ここに処理を書きます。<br>
+
+※ _json_decode関数_ <br>
+
+まず、`json_decode($this->tags)`で、JSON形式の文字列であるタグ情報をPHPの`json_decode`関数を使って連想配列に変換しています。<br>
+
++ [json_decode - PHP公式マニュアル](https://www.php.net/manual/ja/function.json-decode.php) <br>
+
+※ _collect関数_ <br>
+
+それをさらにLaravelの `collect`関数を使ってコレクションに変換しています。<br>
+
+コレクションに変換する理由は、この後で行う`slice`メソッドや`map`メソッドといった、便利なコレクションメソッドを使うためです。<br>
+
++ [コレクション生成 -Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html#creating-collections) <br>
+
+※ _sliceメソッド_ <br>
+
+`slice`メソッドを使うと、コレクションの要素が、第一引数に指定したインデックスから第二引数に指定した数だけになります。<br>
+
+`slice(0, 5)`にすると、もしコレクションの要素が6個以上あったとしても、最初の5個だけが残ります。<br>
+
+8章のパート3では、タグ入力フォームに `"タグを5個まで入力できます"`と表示するようにしましたが、その対応をここで行っています。<br>
+
++ [slice() - Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html#method-slice)
+
+※ _mapメソッド_ <br>
+
+`map`メソッドは、コレクションの各要素に対して順に処置を行い、新しいコレクションを作成します。<br>
+
+この`map`メソッドには、引数に関数を渡すことができます。<br>
+
+このような、引数に渡す関数のことをコールバックと呼びます。<br>
+
+今回のコールバックは以下のクロージャー（無名関数）となっています。<br>
+
+```php:sample.php
+function ($requestTag) {
+  // 処理
+}
+```
+
++ [map() - Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html#method-map) <br>
