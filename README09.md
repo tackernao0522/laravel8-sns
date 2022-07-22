@@ -299,3 +299,326 @@ class Tag extends Model
 ```
 
 + [ループ変数 - Laravel公式](https://readouble.com/laravel/6.x/ja/blade.html#the-loop-variable) <br>
+
+# 8-9 記事投稿処理でタグを登録可能にし記事にタグを表示する
+
+## 1. editアクションメソッドの編集
+
++ `server/app/Http/Controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ArticleRequest;
+use App\Models\Article;
+use App\Models\Tag;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function __construct()
+    {
+        $this->authorizeResource(Article::class, 'article');
+    }
+
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create()
+    {
+        return view('articles.create');
+    }
+
+    public function store(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all());
+        $article->user_id = $request->user()->id;
+        $article->save();
+
+        $request->tags->each(function ($tagName) use ($article) {
+            $tag = Tag::firstOrCreate(['name' => $tagName]);
+            $article->tags()->attach($tag);
+        });
+
+        return redirect()->route('articles.index');
+    }
+
+    // 編集
+    public function edit(Article $article)
+    {
+        $tagNames = $article->tags->map(function ($tag) {
+            return ['text' => $tag->name];
+        });
+
+        return view('articles.edit', compact('article', 'tagNames'));
+    }
+
+    public function update(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all())->save();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function destroy(Article $article)
+    {
+        $article->delete();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function show(Article $article)
+    {
+        return view('articles.show', compact('article'));
+    }
+
+    public function like(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+        $article->likes()->attach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes
+        ];
+    }
+
+    public function unlike(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes,
+        ];
+    }
+}
+```
+
+## 2. 記事入力フォームのBladeからVueコンポーネントに記事のタグ情報を渡す
+
++ `server/resources/views/articles/form.blade.php`を編集<br>
+
+```php:form.blade.php
+@csrf
+<div class="md-form">
+    <label>タイトル</label>
+    <input type="text" name="title" class="form-control" value="{{ $article->title ?? old('title') }}" required>
+</div>
+<div class="form-group">
+    <article-tags-input :initial-tags='@json($tagNames ?? [])'> // 編集
+    </article-tags-input>
+</div>
+<div class="form-group">
+    <label></label>
+    <textarea name="body" class="form-control" rows="16" placeholder="本文" required>{{ $article->body ?? old('body') }}</textarea>
+</div>
+```
+
+## 3. Bladeから渡されたタグ情報をVueコンポーネントに表示する
+
++ `server/resources/js/components/ArticleTagsInput.vue`を編集<br>
+
+```vue:ArticleTagsInput.vue
+<template>
+  <div>
+    <input type="hidden" name="tags" :value="tagsJson" />
+    <vue-tags-input
+      v-model="tag"
+      :tags="tags"
+      placeholder="タグを5個まで入力できます"
+      :autocomplete-items="filteredItems"
+      @tags-changed="(newTags) => (tags = newTags)"
+    />
+  </div>
+</template>
+
+<script>
+import VueTagsInput from "@johmun/vue-tags-input";
+
+export default {
+  components: {
+    VueTagsInput,
+  },
+  // 追加
+  props: {
+    initialTags: {
+      type: Array,
+      default: [],
+    },
+  },
+  data() {
+    return {
+      tag: "",
+      tags: this.initialTags, // 編集
+      autocompleteItems: [
+        {
+          text: "Spain",
+        },
+        {
+          text: "France",
+        },
+        {
+          text: "USA",
+        },
+        {
+          text: "Germany",
+        },
+        {
+          text: "China",
+        },
+      ],
+    };
+  },
+  computed: {
+    filteredItems() {
+      return this.autocompleteItems.filter((i) => {
+        return i.text.toLowerCase().indexOf(this.tag.toLowerCase()) !== -1;
+      });
+    },
+    tagsJson() {
+      return JSON.stringify(this.tags);
+    },
+  },
+};
+</script>
+
+<style lang="css" scoped>
+.vue-tags-input {
+  max-width: inherit;
+}
+</style>
+<style lang="css">
+.vue-tags-input .ti-tag {
+  background: transparent;
+  border: 1px solid #747373;
+  color: #747373;
+  margin-right: 4px;
+  border-radius: 0px;
+  font-size: 13px;
+}
+</style>
+```
+
+## 4. 記事更新処理でタグの登録と記事・タグの紐付け登録・削除を行う
+
++ `server/app/Http/controllers/ArticleController.php`を編集<br>
+
+```php:ArticleController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Http\Requests\ArticleRequest;
+use App\Models\Article;
+use App\Models\Tag;
+use Illuminate\Http\Request;
+
+class ArticleController extends Controller
+{
+    public function __construct()
+    {
+        $this->authorizeResource(Article::class, 'article');
+    }
+
+    public function index()
+    {
+        $articles = Article::all()->sortByDesc('created_at');
+
+        return view('articles.index', compact('articles'));
+    }
+
+    public function create()
+    {
+        return view('articles.create');
+    }
+
+    public function store(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all());
+        $article->user_id = $request->user()->id;
+        $article->save();
+
+        $request->tags->each(function ($tagName) use ($article) {
+            $tag = Tag::firstOrCreate(['name' => $tagName]);
+            $article->tags()->attach($tag);
+        });
+
+        return redirect()->route('articles.index');
+    }
+
+    public function edit(Article $article)
+    {
+        $tagNames = $article->tags->map(function ($tag) {
+            return ['text' => $tag->name];
+        });
+
+        return view('articles.edit', compact('article', 'tagNames'));
+    }
+
+    // 編集
+    public function update(ArticleRequest $request, Article $article)
+    {
+        $article->fill($request->all())->save();
+
+        $article->tags()->detach();
+        $request->tags->each(function ($tagName) use ($article) {
+            $tag = Tag::firstOrCreate(['name' => $tagName]);
+            $article->tags()->attach($tag);
+        });
+
+        return redirect()->route('articles.index');
+    }
+
+    public function destroy(Article $article)
+    {
+        $article->delete();
+
+        return redirect()->route('articles.index');
+    }
+
+    public function show(Article $article)
+    {
+        return view('articles.show', compact('article'));
+    }
+
+    public function like(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+        $article->likes()->attach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes
+        ];
+    }
+
+    public function unlike(Request $request, Article $article)
+    {
+        $article->likes()->detach($request->user()->id);
+
+        return [
+            'id' => $article->id,
+            'countLikes' => $article->count_likes,
+        ];
+    }
+}
+```
+
+### detachメソッドの使用
+
+追加したコードは、8章のパート7で記事投稿処理(`store` アクションメソッド)に追加したものとほぼ同じです。<br>
+
+唯一異なるのは `$article->tags()->detatch();` のコードです。<br>
+
+`detach`メソッドを引数無しで使うと、そのリレーションを紐付ける中間テーブルのレコードが全削除されます。<br>
+
++ [detach - Laravel公式](https://readouble.com/laravel/6.x/ja/eloquent-relationships.html#updating-many-to-many-relationships) <br>
+
+これにより、更新対象の記事とタグの紐付けをいったん全削除しています。<br>
