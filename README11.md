@@ -291,3 +291,269 @@ export default {
 }
 </style>
 ```
+
+# 9-2 ユーザーページを表示する
+
+## 1. コントローラの作成
+
++ `$ php artisan make:controller UserController`を実行<br>
+
+## 2. ルーティングの追加
+
++ `server/routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes();
+Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
+Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
+Route::resource('/articles', ArticleController::class)->only('show');
+Route::prefix('articles')->name('articles.')->group(function () {
+  Route::put('/{article}/like', [ArticleController::class, 'like'])->name('like')->middleware('auth');
+  Route::delete('/{article}/like', [ArticleController::class, 'unlike'])->name('unlike')->middleware('auth');
+});
+Route::get('/tags/{name}', [TagController::class, 'show'])->name('tags.show');
+// 追加
+Route::prefix('users')->name('users.')->group(function () {
+  Route::get('/{name}', [UserController::class, 'show'])->name('show');
+});
+```
+
++ [ルートグループ - Laravel公式](https://readouble.com/laravel/6.x/ja/routing.html#route-groups) <br>
+
+## 3. アクションメソッドの追加
+
++ `server/app/Http/Controllers/UserController.php`を編集<br>
+
+```php:UserController.php
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\User;
+use Illuminate\Http\Request;
+
+class UserController extends Controller
+{
+    public function show(string $name)
+    {
+        $user = User::where('name', $name)->first();
+
+        return view('users.show', compact('user'));
+    }
+}
+```
+
+## 4. ユーザーページのBladeの作成
+
++ `$ mkdir resources/views/users && touch $_/show.blade.php`を実行<br>
+
++ `resources/views/users/show.blade.php`を編集<br>
+
+```html:show.blade.php
+@extends('app')
+
+@section('title', $user->name)
+
+@section('content')
+    @include('nav')
+    <div class="container">
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="d-flex flex-row">
+                    <a href="{{ route('users.show', $user->name) }}" class=text-dark>
+                        <i class="fas fa-user-circle fa-3x"></i>
+                    </a>
+                </div>
+                <h2 class="h5 card-title m-0">
+                    <a href="{{ route('users.show', $user->name) }}" class="text-dark">
+                        {{ $user->name }}
+                    </a>
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="card-text">
+                    <a href="" class="text-muted">
+                        10 フォロー
+                    </a>
+                    <a href="" class="text-muted">
+                        10 フォロワー
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```
+
+## 5. 記事からユーザーページに遷移可能にする
+
++ `server/resources/views/articles/card.blade.php`を編集<br>
+
+```html:card.blade.php
+<div class="card mt-3">
+    <div class="card-body d-flex flex-row">
+        <!-- 編集 -->
+        <a href="{{ route('users.show', $article->user->name) }}" class="text-dark">
+            <i class="fas fa-user-circle fa-3x mr-1"></i>
+        </a>
+        <!-- ここまで -->
+        <div>
+            <div class="font-weight-bold">
+                <!-- 編集 -->
+                <a href="{{ route('users.show', $article->user->name) }}" class="text-dark">
+                    {{ $article->user->name }}
+                </a>
+                <!-- ここまで -->
+            </div>
+            <div class="font-weight-lighter">
+                {{ $article->created_at->format('Y/m/d H:i') }}
+            </div>
+        </div>
+
+        @if (Auth::id() === $article->user_id)
+            <!-- dropdown -->
+            <div class="ml-auto card-text">
+                <div class="dropdown">
+                    <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </a>
+                    <div class="dropdown-menu dropdown-menu-right">
+                        <a class="dropdown-item" href="{{ route('articles.edit', $article->id) }}">
+                            <i class="fas fa-pen mr-1"></i>記事を更新する
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <a class="dropdown-item text-danger" data-toggle="modal"
+                            data-target="#modal-delete-{{ $article->id }}">
+                            <i class="fas fa-trash-alt mr-1"></i>記事を削除する
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <!-- dropdown -->
+
+            <!-- modal -->
+            <div id="modal-delete-{{ $article->id }}" class="modal fade" tabindex="-1" role="dialog">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <button type="button" class="close" data-dismiss="modal" aria-label="閉じる">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <form method="POST" action="{{ route('articles.destroy', $article->id) }}">
+                            @csrf
+                            @method('DELETE')
+                            <div class="modal-body">
+                                {{ $article->title }}を削除します。よろしいですか？
+                            </div>
+                            <div class="modal-footer justify-content-between">
+                                <a class="btn btn-outline-grey" data-dismiss="modal">キャンセル</a>
+                                <button type="submit" class="btn btn-danger">削除する</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- modal -->
+        @endif
+
+    </div>
+    <div class="card-body pt-0 pb-2">
+        <h3 class="h4 card-title">
+            <a class="text-dark" href="{{ route('articles.show', ['article' => $article]) }}">
+                {{ $article->title }}
+            </a>
+        </h3>
+        <div class="card-text">
+            {!! nl2br(e($article->body)) !!}
+        </div>
+    </div>
+    <div class="card-body pt-0 pb-2 pl-3">
+        <div class="card-text">
+            <article-like :initial-is-liked-by="@json($article->isLikedBy(Auth::user()))"
+                :initial-count-likes="@json($article->count_likes)" :authorized='@json(Auth::check())'
+                endpoint="{{ route('articles.like', $article->id) }}">
+            </article-like>
+        </div>
+    </div>
+    @foreach ($article->tags as $tag)
+        @if ($loop->first)
+            <div class="card-body pt-0 pb-4 pl-3">
+                <div class="card-text line-height">
+        @endif
+        <a href="{{ route('tags.show', $tag->name) }}" class="border p-1 mr-1 mt-1 text-muted">
+            {{ $tag->hashtag }}
+        </a>
+        @if ($loop->last)
+</div>
+</div>
+@endif
+@endforeach
+</div>
+```
+
+## 6. マイページメニューからユーザーページに遷移可能にする
+
++ `server/resources/views/nav.blade.php`を編集<br>
+
+```html:nav.blade.php
+<nav class="navbar navbar-expand navbar-dark blue-gradient">
+
+    <a href="/" class="navbar-brand"><i class="far fa-sticky-not mr-1"></i>memo</a>
+
+    <ul class="navbar-nav ml-auto">
+
+        @guest
+            <li class="nav-item">
+                <a href="{{ route('register') }}" class="nav-link">ユーザー登録</a>
+            </li>
+        @endguest
+
+        @guest
+            <li class="nav-item">
+                <a href="{{ route('login') }}" class="nav-link">ログイン</a>
+            </li>
+        @endguest
+
+        @auth
+            <li class="nav-item">
+                <a href="{{ route('articles.create') }}" class="nav-link"><i class="fas fa-pen mr-1"></i>投稿する</a>
+            </li>
+        @endauth
+
+        @auth
+            {{-- Dropdown --}}
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true"
+                    aria-expanded="false">
+                    <i class="fas fa-user-circle"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+                    <!-- 編集 -->
+                    <button class="dropdown-item" type="button"
+                        onclick="location.href='{{ route('users.show', Auth::user()->name) }}'">
+                        <!-- ここまで -->
+                        マイページ
+                    </button>
+                    <div class="dropdown-divider"></div>
+                    <button form="logout-button" class="dropdown-item" type="submit">
+                        ログアウト
+                    </button>
+                </div>
+            </li>
+            <form action="{{ route('logout') }}" id="logout-button" method="POST">
+                @csrf
+            </form>
+            {{-- Dropdown --}}
+        @endauth
+    </ul>
+</nav>
+```
