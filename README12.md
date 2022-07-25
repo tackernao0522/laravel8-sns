@@ -104,3 +104,65 @@ const app = new Vue({
     </div>
 @endsection
 ```
+
+# 9-4 フォローを管理するテーブルの作成
+
+## 1. followテーブルのマイグレーションファイルの作成
+
+|カラム名|属性|役割|
+|:---:|:---:|:---:|
+|id|整数|フォロワー・被フォローの紐付けを識別するID|
+|follower_id|整数|フォロワーのユーザーid|
+|followee_id|整数|フォローされている側のユーザーid|
+|created_at|日付と時刻|作成日時|
+|updated_at|日付と時刻|更新日時|
+
++ `$ php artisan make:migration create_follows_table --create=follows`を実行<br>
+
++ `server/database/migrations/create_follows_table.php`を編集<br>
+
+```php:create_follows_table.php
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateFollowsTable extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        Schema::create('follows', function (Blueprint $table) {
+            $table->id();
+            $table->bigInteger('follower_id')->unsigned();
+            $table->foreign('follower_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
+            $table->bigInteger('followee_id')->unsigned();
+            $table->foreign('followee_id')
+                ->references('id')
+                ->on('users')
+                ->onDelete('cascade');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        Schema::dropIfExists('follows');
+    }
+}
+```
+
++ `$ php artisan migrate`を実行<br>
