@@ -79,7 +79,7 @@ class UserController extends Controller
             return abort('404', 'Cannot follow yourself.');
         }
 
-        $request->user()->followings()->detatch($user);
+        $request->user()->followings()->detach($user);
 
         return ['name' => $name];
     }
@@ -162,7 +162,7 @@ class User extends Authenticatable
     // 追加
     public function followings(): BelongsToMany
     {
-        return $this->belongsToMany('App\Modles\User', 'follows', 'follow_id', 'followee_id')->withTimestamps();
+        return $this->belongsToMany('App\Models\User', 'follows', 'follower_id', 'followee_id')->withTimestamps();
     }
 
     public function isFollowedBy(?User $user): bool
@@ -173,3 +173,134 @@ class User extends Authenticatable
     }
 }
 ```
+
+# 9-8 フォローボタンのVueコンポーネントからLaravelに非同期通信する
+
+## 1. ログイン状態と非同期通信先URLをBladeからVueコンポーネントに渡す
+
++ `server/resources/views/users/show.blade.php`を編集<br>
+
+```html:show.blade.php
+@extends('app')
+
+@section('title', $user->name)
+
+@section('content')
+    @include('nav')
+    <div class="container">
+        <div class="card mt-3">
+            <div class="card-body">
+                <div class="d-flex flex-row">
+                    <a href="{{ route('users.show', $user->name) }}" class=text-dark>
+                        <i class="fas fa-user-circle fa-3x"></i>
+                    </a>
+                    @if (Auth::id() !== $user->id)
+                        <!-- 編集 -->
+                        <follow-button class="ml-auto" :initial-is-followed-by='@json($user->isFollowedBy(Auth::user()))'
+                            :authorized='@json(Auth::check())' endpoint="{{ route('users.follow', $user->name) }}">
+                        </follow-button>
+                    @endif
+                </div>
+                <h2 class="h5 card-title m-0">
+                    <a href="{{ route('users.show', $user->name) }}" class="text-dark">
+                        {{ $user->name }}
+                    </a>
+                </h2>
+            </div>
+            <div class="card-body">
+                <div class="card-text">
+                    <a href="" class="text-muted">
+                        10 フォロー
+                    </a>
+                    <a href="" class="text-muted">
+                        10 フォロワー
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```
+
++ [現在のユーザーが認証されているか調べる - Laravel公式](https://readouble.com/laravel/6.x/ja/authentication.html#retrieving-the-authenticated-user) <br>
+
+## 2. Vueコンポーネントからフォロー・フォロー解除を行う
+
++ `server/resources/js/components/FollowButton.vue`を編集<br>
+
+```vue:FollowButton.vue
+<template>
+  <div>
+    <button
+      class="btn-sm shadow-none border border-primary p-2"
+      :class="buttonColor"
+      @click="clickFollow" // 追加
+    >
+      <i class="mr-1" :class="buttonIcon"></i>
+      {{ buttonText }}
+    </button>
+  </div>
+</template>
+
+<script>
+export default {
+  props: {
+    initialIsFollowedBy: {
+      type: Boolean,
+      default: false,
+    },
+    // 追加
+    authorized: {
+      type: Boolean,
+      default: false,
+    },
+    endpoint: {
+      type: String,
+    },
+    // ここまで
+  },
+  data() {
+    return {
+      isFollowedBy: this.initialIsFollowedBy,
+    };
+  },
+  computed: {
+    buttonColor() {
+      return this.isFollowedBy ? "bg-primary text-white" : "bg-white";
+    },
+    buttonIcon() {
+      return this.isFollowedBy ? "fas fa-user-check" : "fas fa-user-plus";
+    },
+    buttonText() {
+      return this.isFollowedBy ? "フォロー中" : "フォロー";
+    },
+  },
+  // 追加
+  methods: {
+    clickFollow() {
+      if (!this.authorized) {
+        alert("フォロー機能はログイン中のみ使用できます");
+        return;
+      }
+
+      this.isFollowedBy ? this.unfollow() : this.follow();
+    },
+    async follow() {
+      const response = await axios.put(this.endpoint);
+
+      this.isFollowedBy = true;
+    },
+    async unfollow() {
+      const response = await axios.delete(this.endpoint);
+
+      this.isFollowedBy = false;
+    },
+  },
+  // ここまで
+};
+</script>
+```
+
++ [条件(三項)演算子 - MDN](https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Operators/Conditional_Operator) <br>
+
++ [async/await入門 - async/awitとは | CodeGrid](https://app.codegrid.net/entry/2017-async-await-1) <br>
