@@ -36,7 +36,7 @@ class UserController extends Controller
             return abort('404', 'Cannot follow yourself.');
         }
 
-        $request->user()->followings()->detatch($user);
+        $request->user()->followings()->detach($user);
 
         return ['name' => $name];
     }
