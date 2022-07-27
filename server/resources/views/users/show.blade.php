@@ -34,5 +34,20 @@
                 </div>
             </div>
         </div>
+        <ul class="nav nav-tabs nav-justified mt-3">
+            <li class="nav-item">
+                <a href="{{ route('users.show', $user->name) }}" class="nav-link text-muted active">
+                    記事
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="" class="nav-link text-muted">
+                    いいね
+                </a>
+            </li>
+        </ul>
+        @foreach ($articles as $article)
+            @include('articles.card')
+        @endforeach
     </div>
 @endsection

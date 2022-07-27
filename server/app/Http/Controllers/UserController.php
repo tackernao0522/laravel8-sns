@@ -11,7 +11,9 @@ class UserController extends Controller
     {
         $user = User::where('name', $name)->first();
 
-        return view('users.show', compact('user'));
+        $articles = $user->articles->sortByDesc('created_at');
+
+        return view('users.show', compact('user', 'articles'));
     }
 
     public function follow(Request $request, string $name)
