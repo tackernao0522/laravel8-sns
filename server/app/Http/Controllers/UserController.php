@@ -16,6 +16,16 @@ class UserController extends Controller
         return view('users.show', compact('user', 'articles'));
     }
 
+    public function likes(string $name)
+    {
+        $user = User::where('name', $name)->first();
+
+        $articles = $user->likes->sortByDesc('created_at');
+        // dd($user, $articles);
+
+        return view('users.likes', compact('user', 'articles'));
+    }
+
     public function follow(Request $request, string $name)
     {
         $user = User::where('name', $name)->first();
