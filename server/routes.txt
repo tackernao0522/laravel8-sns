@@ -48,4 +48,5 @@
 |        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
 |        | DELETE    | users/{name}/follow     | users.unfollow   | App\Http\Controllers\UserController@unfollow                           | web                                                             |
 |        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
+|        | GET|HEAD  | users/{name}/likes      | users.likes      | App\Http\Controllers\UserController@likes                              | web                                                             |
 +--------+-----------+-------------------------+------------------+------------------------------------------------------------------------+-----------------------------------------------------------------+
