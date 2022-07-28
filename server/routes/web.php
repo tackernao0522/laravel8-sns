@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Auth::routes();
 Route::prefix('login')->name('login.')->group(function () {
   Route::get('/{provider}', [LoginController::class, 'redirectToProvider'])->name('{provider}');
+  Route::get('/{provider}/callback', [LoginController::class, 'handleProviderCallback'])->name('{provider}.callback');
 });
 Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
 Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
