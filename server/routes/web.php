@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Auth::routes();
+Route::prefix('login')->name('login.')->group(function () {
+  Route::get('/{provider}', [LoginController::class, 'redirectToProvider'])->name('{provider}');
+});
 Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
 Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
 Route::resource('/articles', ArticleController::class)->only('show');

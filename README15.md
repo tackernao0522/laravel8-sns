@@ -394,3 +394,160 @@ return [
 
 ];
 ```
+
+# 10-4 Googleへのリダイレクト処理の作成
+
+## 1. ルーティングの追加
+
++ `server/routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes();
+// 追加
+Route::prefix('login')->name('login.')->group(function () {
+  Route::get('/{provider}', [LoginController::class, 'redirectToProvider'])->name('{provider}');
+});
+// ここまで
+Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
+Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
+Route::resource('/articles', ArticleController::class)->only('show');
+Route::prefix('articles')->name('articles.')->group(function () {
+  Route::put('/{article}/like', [ArticleController::class, 'like'])->name('like')->middleware('auth');
+  Route::delete('/{article}/like', [ArticleController::class, 'unlike'])->name('unlike')->middleware('auth');
+});
+Route::get('/tags/{name}', [TagController::class, 'show'])->name('tags.show');
+Route::prefix('users')->name('users.')->group(function () {
+  Route::get('/{name}', [UserController::class, 'show'])->name('show');
+  Route::get('/{name}/likes', [UserController::class, 'likes'])->name('likes');
+  Route::get('/{name}/followings', [UserController::class, 'followings'])->name('followings');
+  Route::get('/{name}/followers', [UserController::class, 'followers'])->name('followers');
+  Route::middleware('auth')->group(function () {
+    Route::put('/{name}/follow', [UserController::class, 'follow'])->name('follow');
+    Route::delete('/{name}/follow', [UserController::class, 'unfollow'])->name('unfollow');
+  });
+});
+```
+
++ `server/app/Http/Controllers/Auth/LoginController.php`を編集<br>
+
+```php:LoginController.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Providers\RouteServiceProvider;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Laravel\Socialite\Facades\Socialite; // 追加
+
+class LoginController extends Controller
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Login Controller
+    |--------------------------------------------------------------------------
+    |
+    | This controller handles authenticating users for the application and
+    | redirecting them to your home screen. The controller uses a trait
+    | to conveniently provide its functionality to your applications.
+    |
+    */
+
+    use AuthenticatesUsers;
+
+    /**
+     * Where to redirect users after login.
+     *
+     * @var string
+     */
+    protected $redirectTo = RouteServiceProvider::HOME;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('guest')->except('logout');
+    }
+
+    // 追加
+    public function redirectToProvider(string $provider)
+    {
+        return Socialite::driver($provider)->redirect();
+    }
+}
+```
+
+## 3. ログイン画面のBladeの編集<br>
+
++ `server/resources/views/auth/login.blade.php`を編集<br>
+
+```html:login.blade.php
+@extends('app')
+
+@section('title', 'ログイン')
+
+@section('content')
+    <div class="container">
+        <div class="row">
+            <div class="mx-auto col col-12 col-sm-11 col-md-9 col-lg-7 col-xl-6">
+                <h1 class="text-center"><a href="/" class="text-dark">memo</a></h1>
+                <div class="card mt-3">
+                    <div class="card-body text-center">
+                        <h2 class="h3 card-title text-center mt-2">ログイン</h2>
+
+                        <!-- 追加 -->
+                        <a href="{{ route('login.{provider}', ['provider' => 'google']) }}" class="btn btn-block btn-danger">
+                            <i class="fab fa-google mr-1"></i>Googleでログイン
+                        </a>
+                        <!-- ここまで -->
+
+                        @include('error_card_list')
+
+                        <div class="card-text">
+                            <form method="POST" action="{{ route('login') }}">
+                                @csrf
+
+                                <div class="md-form">
+                                    <label for="email">メールアドレス</label>
+                                    <input type="text" id="email" name="email" class="form-control"
+                                        value="{{ old('email') }}" required>
+                                </div>
+
+                                <div class="md-form">
+                                    <label for="password">パスワード</label>
+                                    <input class="form-control" type="password" id="password" name="password" required>
+                                </div>
+
+                                <input type="hidden" name="remember" id="remember" value="on">
+
+                                <div class="text-left">
+                                    <a href="{{ route('password.request') }}" class="card-text">パスワードを忘れた方</a>
+                                </div>
+
+                                <button class="btn btn-block blue-gradient mt-2 mb-2" type="submit">ログイン</button>
+                            </form>
+
+                            <div class="mt-0">
+                                <a href="{{ route('register') }}" class="card-text">ユーザー登録はこちら</a>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```

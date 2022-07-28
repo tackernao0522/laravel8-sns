@@ -28,6 +28,8 @@
 |        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
 |        | POST      | login                   |                  | App\Http\Controllers\Auth\LoginController@login                        | web                                                             |
 |        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
+|        | GET|HEAD  | login/{provider}        | login.{provider} | App\Http\Controllers\Auth\LoginController@redirectToProvider           | web                                                             |
+|        |           |                         |                  |                                                                        | App\Http\Middleware\RedirectIfAuthenticated                     |
 |        | POST      | logout                  | logout           | App\Http\Controllers\Auth\LoginController@logout                       | web                                                             |
 |        | GET|HEAD  | password/confirm        | password.confirm | App\Http\Controllers\Auth\ConfirmPasswordController@showConfirmForm    | web                                                             |
 |        |           |                         |                  |                                                                        | App\Http\Middleware\Authenticate                                |
