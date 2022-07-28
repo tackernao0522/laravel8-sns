@@ -325,3 +325,17 @@ class UserController extends Controller
     </div>
 </div>
 ```
+
+# 10-2 Googleの設定とLaravelの環境変数の設定
+
++ [一番わかりやすい OAAuth の説明 -Qiita](https://qiita.com/TakahikoKawasaki/items/e37caf50776e00e733be) <br>
+
+## 1. Googleのプロジェクトの作成
+
+まず、[Google API Console](https://console.developers.google.com/project) にアクセスし、<br>
+
++ プロジェクトの作成<br>
+
+を選択してください。<br>
+
+この通りに設定する [10-2 Googleの設定とLaravelの環境変数の設定](https://www.techpit.jp/courses/11/curriculums/12/sections/104/parts/360) <br>
