@@ -339,3 +339,58 @@ class UserController extends Controller
 を選択してください。<br>
 
 この通りに設定する [10-2 Googleの設定とLaravelの環境変数の設定](https://www.techpit.jp/courses/11/curriculums/12/sections/104/parts/360) <br>
+
+# 10-3 Laravel Socialiteのインストールと設定ファイルの編集
+
++ [Laravel Socialite - Laravel公式](https://readouble.com/laravel/6.x/ja/socialite.html) <br>
+
+## 1. Laravel Socialiteのインストール
+
++ `$ COMPOSER_MEMORY_LIMIT=-1 composer require laravel/socialite`を実行<br>
+
+## 2. Laravelの設定ファイル(config)の編集<br>
+
++ `server/config/services.php`を編集<br>
+
+```php:services.php
+<?php
+
+return [
+
+    /*
+    |--------------------------------------------------------------------------
+    | Third Party Services
+    |--------------------------------------------------------------------------
+    |
+    | This file is for storing the credentials for third party services such
+    | as Mailgun, Postmark, AWS and more. This file provides the de facto
+    | location for this type of information, allowing packages to have
+    | a conventional file to locate the various service credentials.
+    |
+    */
+
+    'mailgun' => [
+        'domain' => env('MAILGUN_DOMAIN'),
+        'secret' => env('MAILGUN_SECRET'),
+        'endpoint' => env('MAILGUN_ENDPOINT', 'api.mailgun.net'),
+    ],
+
+    'postmark' => [
+        'token' => env('POSTMARK_TOKEN'),
+    ],
+
+    'ses' => [
+        'key' => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+    ],
+    // 追加
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('APP_URL') . '/login/google/callback',
+    ]
+    //ここまで
+
+];
+```
