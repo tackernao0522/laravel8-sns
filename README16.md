@@ -360,7 +360,216 @@ class RegisterController extends Controller
                                 <input type="hidden" name="token" value="{{ $token }}">
                                 <div class="md-form">
                                     <label for="name">ユーザー名</label>
-                                    <input type="text" id="name" class="form-control" required>
+                                    <input type="text" id="name" name="name" class="form-control" required>
+                                    <small>英数字3〜16文字(登録後の変更はできません)</small>
+                                </div>
+                                <div class="md-form">
+                                    <label for="email">メールアドレス</label>
+                                    <input type="text" class="form-control" id="email" name="email"
+                                        value="{{ $email }}" disabled>
+                                </div>
+                                <button class="btn btn-block blue-gradient mt-2 mb-2" type="submit">ユーザー登録</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+@endsection
+```
+
+# 10-7 Googleのアカウントでユーザー登録可能にする
+
+## 1. ルーティングの追加
+
++ `server/routes/web.php`を編集<br>
+
+```php:web.php
+<?php
+
+use App\Http\Controllers\ArticleController;
+use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\TagController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
+Auth::routes();
+Route::prefix('login')->name('login.')->group(function () {
+  Route::get('/{provider}', [LoginController::class, 'redirectToProvider'])->name('{provider}');
+  Route::get('/{provider}/callback', [LoginController::class, 'handleProviderCallback'])->name('{provider}.callback');
+});
+Route::prefix('register')->name('register.')->group(function () {
+  Route::get('/{provider}', [RegisterController::class, 'showProviderUserRegistrationForm'])->name('{provider}');
+  // 追加
+  Route::post('/{provider}', [RegisterController::class, 'registerProviderUser'])->name('{provider}');
+});
+Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
+Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
+Route::resource('/articles', ArticleController::class)->only('show');
+Route::prefix('articles')->name('articles.')->group(function () {
+  Route::put('/{article}/like', [ArticleController::class, 'like'])->name('like')->middleware('auth');
+  Route::delete('/{article}/like', [ArticleController::class, 'unlike'])->name('unlike')->middleware('auth');
+});
+Route::get('/tags/{name}', [TagController::class, 'show'])->name('tags.show');
+Route::prefix('users')->name('users.')->group(function () {
+  Route::get('/{name}', [UserController::class, 'show'])->name('show');
+  Route::get('/{name}/likes', [UserController::class, 'likes'])->name('likes');
+  Route::get('/{name}/followings', [UserController::class, 'followings'])->name('followings');
+  Route::get('/{name}/followers', [UserController::class, 'followers'])->name('followers');
+  Route::middleware('auth')->group(function () {
+    Route::put('/{name}/follow', [UserController::class, 'follow'])->name('follow');
+    Route::delete('/{name}/follow', [UserController::class, 'unfollow'])->name('unfollow');
+  });
+});
+```
+
+## 2. アクションメソッドの追加
+
++ `server/app/Http/Controllers/Auth/RegisterController.php`を編集<br>
+
+```php:RegisterController.php
+<?php
+
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use App\Providers\RouteServiceProvider;
+use App\Models\User;
+use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Laravel\Socialite\Facades\Socialite;
+
+class RegisterController extends Controller
+{
+    /*
+    |--------------------------------------------------------------------------
+    | Register Controller
+    |--------------------------------------------------------------------------
+    |
+    | This controller handles the registration of new users as well as their
+    | validation and creation. By default this controller uses a trait to
+    | provide this functionality without requiring any additional code.
+    |
+    */
+
+    use RegistersUsers;
+
+    /**
+     * Where to redirect users after registration.
+     *
+     * @var string
+     */
+    protected $redirectTo = RouteServiceProvider::HOME;
+
+    /**
+     * Create a new controller instance.
+     *
+     * @return void
+     */
+    public function __construct()
+    {
+        $this->middleware('guest');
+    }
+
+    /**
+     * Get a validator for an incoming registration request.
+     *
+     * @param  array  $data
+     * @return \Illuminate\Contracts\Validation\Validator
+     */
+    protected function validator(array $data)
+    {
+        return Validator::make($data, [
+            'name' => ['required', 'string', 'alpha_num', 'min:3', 'max:16', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+    }
+
+    /**
+     * Create a new user instance after a valid registration.
+     *
+     * @param  array  $data
+     * @return \App\Models\User
+     */
+    protected function create(array $data)
+    {
+        return User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
+    }
+
+    public function showProviderUserRegistrationForm(Request $request, string $provider)
+    {
+        $token = $request->token;
+
+        $providerUser = Socialite::driver($provider)->userFromToken($token);
+
+        return view('auth.social_register', [
+            'provider' => $provider,
+            'email' => $providerUser->getEmail(),
+            'token' => $token,
+        ]);
+    }
+
+    public function registerProviderUser(Request $request, string $provider)
+    {
+        $request->validate([
+            'name' => ['required', 'string', 'alpha_num', 'min:3', 'max:16', 'unique:users'],
+            'token' => ['required', 'string']
+        ]);
+
+        $token = $request->token;
+
+        $providerUser = Socialite::driver($provider)->userFromToken($token);
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $providerUser->getEmail(),
+            'password' => null,
+        ]);
+
+        $this->guard()->login($user, true);
+
+        return $this->registered($request, $user)
+            ?: redirect($this->redirectPath());
+    }
+}
+```
+
+## 3. Bladeの編集
+
++ `server/resources/views/auth/social_register.blade.php`を編集<br>
+
+```html:social_register.blade.php
+@extends('app')
+
+@section('title', 'ユーザー登録')
+
+@section('content')
+    <div class="container">
+        <div class="row">
+            <div class="mx-auto col col-12 col-sm-11 col-md-9 col-lg-7 col-xl-6">
+                <h1 class="text-center"><a href="/" class="text-dark">memo</a></h1>
+                <div class="card mt-3">
+                    <div class="card-body text-center">
+                        <h2 class="h3 card-title text-center mt-2">ユーザー登録</h2>
+
+                        @include('error_card_list')
+                        <div class="cart-text">
+                            <form action="{{ route('register.{provider}', ['provider' => $provider]) }}" method="POST"> <!-- 編集 -->
+                                @csrf
+                                <input type="hidden" name="token" value="{{ $token }}">
+                                <div class="md-form">
+                                    <label for="name">ユーザー名</label>
+                                    <input type="text" id="name" name="name" class="form-control" required>
                                     <small>英数字3〜16文字(登録後の変更はできません)</small>
                                 </div>
                                 <div class="md-form">

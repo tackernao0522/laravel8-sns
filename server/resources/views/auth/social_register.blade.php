@@ -13,12 +13,12 @@
 
                         @include('error_card_list')
                         <div class="cart-text">
-                            <form action="" method="POST">
+                            <form action="{{ route('register.{provider}', ['provider' => $provider]) }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="token" value="{{ $token }}">
                                 <div class="md-form">
                                     <label for="name">ユーザー名</label>
-                                    <input type="text" id="name" class="form-control" required>
+                                    <input type="text" id="name" name="name" class="form-control" required>
                                     <small>英数字3〜16文字(登録後の変更はできません)</small>
                                 </div>
                                 <div class="md-form">
