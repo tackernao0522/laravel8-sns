@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
@@ -11,6 +12,9 @@ Auth::routes();
 Route::prefix('login')->name('login.')->group(function () {
   Route::get('/{provider}', [LoginController::class, 'redirectToProvider'])->name('{provider}');
   Route::get('/{provider}/callback', [LoginController::class, 'handleProviderCallback'])->name('{provider}.callback');
+});
+Route::prefix('register')->name('register.')->group(function () {
+  Route::get('/{provider}', [RegisterController::class, 'showProviderUserRegistrationForm'])->name('{provider}');
 });
 Route::get('/', [ArticleController::class, 'index'])->name('articles.index');
 Route::resource('/articles', ArticleController::class)->except(['index', 'show'])->middleware('auth');
