@@ -319,3 +319,159 @@ OK (1 test, 1 assertion)
 ```
 
 + [fzaninotto/Faker - GitHub](https://github.com/fzaninotto/Faker) <br>
+
+# 2-9 いいねされているかを判定するメソッドのテストの続き
+
+## 1. テストの編集（いいねをしているケース)
+
++ `server/tests/Feature/ArticleTest.php`を編集<br>
+
+```php:ArticleTest.php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Article;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+
+class ArticleTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function testIsLikedByNull()
+    {
+        $article = Article::factory()->create();
+
+        $result = $article->isLikedBy(null);
+
+        $this->assertFalse($result);
+    }
+
+    // 追加
+    public function testIsLikedByTheUser()
+    {
+        $article = Article::factory()->create();
+        $user = User::factory()->create();
+        $article->likes()->attach($user);
+
+        $result = $article->isLikedBy($user);
+
+        $this->assertTrue($result);
+    }
+}
+```
+
++ [多対多 - Laravel公式](https://readouble.com/laravel/6.x/ja/eloquent-relationships.html#many-to-many) <br>
+
+#### likes テーブル
+
+|カラム名|属性|役割|
+|:---:|:---:|:---:|
+|id|整数|いいねを識別するID|
+|user_id|整数|いいねしたユーザーのid|
+|article_id|整数|いいねされた記事のid|
+|created_at|日付と時刻|作成日時|
+|updated_at|日付と時刻|更新日時|
+
++ [attach/detach - Laravel公式](https://readouble.com/laravel/6.x/ja/eloquent-relationships.html#updating-many-to-many-relationships) <br>
+
++ [assertTrue - PHPUnit公式](https://phpunit.readthedocs.io/ja/latest/assertions.html#assertfalse) <br>
+
+## 2. テストの実行(いいねをしているケース)
+
++ `$ vendor/bin/phpunit --filter=theuser`を実行<br>
+
+```
+PHPUnit 9.5.21 #StandWithUkraine
+
+.                                                                   1 / 1 (100%)
+
+Time: 00:03.120, Memory: 28.00 MB
+
+OK (1 test, 1 assertion)
+```
+
+## 3. テストの変数(いいねしていないケース)
+
++ `server/tests/Feature/ArticleTest.php`を編集<br>
+
+```php:ArticleTest.php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Article;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+
+class ArticleTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function testIsLikedByNull()
+    {
+        $article = Article::factory()->create();
+
+        $result = $article->isLikedBy(null);
+
+        $this->assertFalse($result);
+    }
+
+    public function testIsLikedByTheUser()
+    {
+        $article = Article::factory()->create();
+        $user = User::factory()->create();
+        $article->likes()->attach($user);
+
+        $result = $article->isLikedBy($user);
+
+        $this->assertTrue($result);
+    }
+
+    // 追加
+    public function testIsLikedByAnother()
+    {
+        $article = Article::factory()->create();
+        $user = User::factory()->create();
+        $another = User::factory()->create();
+        $article->likes()->attach($another);
+
+        $result = $article->isLikedBy($user);
+
+        $this->assertFalse($result);
+    }
+}
+```
+
+## 4. テストの実行(いいねをしていないケース)
+
++ `$ vendor/bin/phpunit --filter=another`を実行<br>
+
+```
+PHPUnit 9.5.21 #StandWithUkraine
+
+.                                                                   1 / 1 (100%)
+
+Time: 00:02.053, Memory: 28.00 MB
+
+OK (1 test, 1 assertion)
+```
+
+## 5. 全てのテストの実行
+
++ `$ vendor/bin/phpunit`を実行<br>
+
+```
+PHPUnit 9.5.21 #StandWithUkraine
+
+.......                                                             7 / 7 (100%)
+
+Time: 00:03.421, Memory: 32.00 MB
+
+OK (7 tests, 10 assertions)
+```
