@@ -187,3 +187,37 @@ OK (1 test, 2 assertions)
 ```
 
 + [Arrange-Act-Assert](http://wiki.c2.com/?ArrangeActAssert) <br>
+
+# 2-7 いいねされているかを判定するメソッドの把握
+
++ [関数の引数 - 型宣言 - PHP公式マニュアル](https://www.php.net/manual/ja/functions.arguments.php#functions.arguments.type-declaration) <br>
+
++ [nullableな型 - PHP公式マニュアル](https://www.php.net/manual/ja/migration71.new-features.php#migration71.new-features.nullable-types) <br>
+
++ [戻り値の型宣言 - PHP公式マニュアル](https://www.php.net/manual/ja/migration70.new-features.php#migration70.new-features.return-type-declarations) <br>
+
++ [三項演算子 - PHP公式マニュアル](https://www.php.net/manual/ja/language.operators.comparison.php#language.operators.comparison.ternary) <br>
+
+#### ■ 動的プロパティ
+
++ [多対多 - Laravel公式](https://readouble.com/laravel/6.x/ja/eloquent-relationships.html#many-to-many) <br>
+
+#### likes テーブル
+
+|カラム名|属性|役割|
+|:---:|:---:|:---:|
+|id|整数|いいねを識別するID|
+|user_id|整数|いいねしたユーザーのid|
+|article_id|整数|いいねされた記事のid|
+|created_at|日付と時刻|作成日時|
+|updated_at|日付と時刻|更新日時|
+
++ [コレクション - Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html) <br>
+
+#### ■ whereメソッド
+
++ [where - Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html#method-where) <br>
+
++ [count - Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html#method-count) <br>
+
++ [型キャスト - PHP公式マニュアル](https://www.php.net/manual/ja/language.types.type-juggling.php#language.types.typecasting) <br>
