@@ -221,3 +221,101 @@ OK (1 test, 2 assertions)
 + [count - Laravel公式](https://readouble.com/laravel/6.x/ja/collections.html#method-count) <br>
 
 + [型キャスト - PHP公式マニュアル](https://www.php.net/manual/ja/language.types.type-juggling.php#language.types.typecasting) <br>
+
+# 2-8 いいねされているかを判定するメソッドのテストとファクトリの作成
+
+## 1. テストの作成
+
++ `$ php artisan make:test ArticleTest`を実行`<br>
+
+## 2. テストの編集(引数がnullのケース)
+
++ `server/tests/Feature/ArticleTest.php`を編集<br>
+
+```php:ArticleTest.php
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Article;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\WithFaker;
+use Tests\TestCase;
+
+class ArticleTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function testIsLikedByNull()
+    {
+        $article = Article::factory()->create();
+
+        $result = $article->isLikedBy(null);
+
+        $this->assertFalse($result);
+    }
+}
+```
+
++ [assertFalse - PHPUnit公式](https://phpunit.readthedocs.io/ja/latest/assertions.html#assertfalse) <br>
+
+## 3. ファクトリの作成
+
++ `$ php artisan make:factory ArticleFactory --model=Article`を実行<br>
+
++ `server/database/factories/ArticleFactory.php`を編集<br>
+
+```php:ArticleFactory.php
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Article;
+use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+class ArticleFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array
+     */
+    public function definition()
+    {
+        return [
+            'title' => $this->faker->text(50),
+            'body' => $this->faker->text(500),
+            'user_id' => function () {
+                return User::factory();
+            }
+        ];
+    }
+}
+```
+
+#### articles テーブル
+
+|カラム名|属性|役割|
+|:---:|:---:|:---:|
+|id|整数|記事を識別するID|
+|title|最大255文字の文字列|記事のタイトル|
+|body|制限なしの文字列|記事の本文|
+|user_id|整数|記事の本文|
+|user_id|整数|記事を投稿したユーザーID|
+|created_at|日付と時刻|作成日時|
+|updated_at|日付と時刻|更新日時|
+
++ `$ vendor/bin/phpunit --filter=null`を実行<br>
+
+```
+PHPUnit 9.5.21 #StandWithUkraine
+
+.                                                                   1 / 1 (100%)
+
+Time: 00:01.537, Memory: 28.00 MB
+
+OK (1 test, 1 assertion)
+```
+
++ [fzaninotto/Faker - GitHub](https://github.com/fzaninotto/Faker) <br>
