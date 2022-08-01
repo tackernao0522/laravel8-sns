@@ -15,17 +15,21 @@ jobs:
     steps:
       - checkout
       - run: sudo composer self-update --2
+      - restore_cache:
+          key: composer-v1-{{ checksum "./server/composer.lock" }}
       - run: composer install -n --prefer-dist --working-dir=./server/
+      - save_cache:
+          key: composer-v1-{{ checksum "./server/composer.lock" }}
+          paths:
+            - .server/vendor
       - run:
           name: npm ci
-          command: |
-            if [ ! -d ./server/node_modules ]; then
-              cd server/; npm ci
-            fi
+          command: cd server/; npm ci
       - run: cd server/; npm run dev
+      # - run: cd server/; composer dump-autoload
       - run:
           name: php test
-          command: php ./server/vendor/phpunit/ --configuration=./server/phpunit.xml
+          command: cd server/; vendor/bin/phpunit
 ```
 
 + `$ cp .env .env.testing`を実行<br>
@@ -172,6 +176,43 @@ MIX_PUSHER_APP_CLUSTER="${PUSHER_APP_CLUSTER}"
 
 GOOGLE_CLIENT_ID=968776725793-9b4qhbjuvhgtifi1410310biqfrmv80j.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=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
+```
+
++ `server/phpunit.xml`を編集<br>
+
+```xml:phpunit.xml
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpunit
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
+  bootstrap="vendor/autoload.php"
+  colors="true"
+>
+    <testsuites>
+        <!-- <testsuite name="Unit">
+            <directory suffix="Test.php">./tests/Unit</directory>
+        </testsuite> -->
+        <testsuite name="Feature">
+            <directory suffix="Test.php">./tests/Feature</directory>
+        </testsuite>
+    </testsuites>
+    <coverage processUncoveredFiles="true">
+        <include>
+            <directory suffix=".php">./app</directory>
+        </include>
+    </coverage>
+    <php>
+        <server name="APP_ENV" value="testing" />
+        <server name="BCRYPT_ROUNDS" value="4" />
+        <server name="CACHE_DRIVER" value="array" />
+        <server name="DB_CONNECTION" value="sqlite"/>
+        <server name="DB_DATABASE" value=":memory:"/>
+        <server name="MAIL_MAILER" value="array" />
+        <server name="QUEUE_CONNECTION" value="sync" />
+        <server name="SESSION_DRIVER" value="array" />
+        <server name="TELESCOPE_ENABLED" value="false" />
+    </php>
+</phpunit>
 ```
 
 ## 6. CircleCIでテストを実行する

@@ -15,8 +15,7 @@ jobs:
             - .server/vendor
       - run:
           name: npm ci
-          command: |
-            cd server/; npm ci
+          command: cd server/; npm ci
       - run: cd server/; npm run dev
       # - run: cd server/; composer dump-autoload
       - run:
