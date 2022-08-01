@@ -25,7 +25,8 @@ jobs:
       - run: cd server/; npm run dev
       - run:
           name: php test
-          command: php ./server/vendor/bin/phpunit --configuration=./server/phpunit.xml
+          working_directory: ./server/
+          command: php artisan test
 ```
 
 + `$ cp .env .env.testing`を実行<br>
