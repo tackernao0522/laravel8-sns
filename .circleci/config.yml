@@ -2,7 +2,7 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: cimg/php:8.0
+      - image: circleci/php:8.0-node-browsers-legacy
       - image: cimg/mysql:8.0
     environment:
       - APP_ENV: testing
