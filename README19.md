@@ -306,7 +306,7 @@ jobs:
       - run:
           name: get ready for mysql
           command: |
-            sudo apt-get update
+            sudo apt update
             sudo apt-get install default-mysql-client
             sudo docker-php-ext-install pdo_mysql
             dockerize -wait tcp://localhost:3306 -timeout 1m
