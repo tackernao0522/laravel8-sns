@@ -247,10 +247,10 @@ jobs:
             if [ ! -d ./server/node_modules ]; then
               cd server/; npm ci
             fi
-        - save_cache:
-            key: npm-v1-{{ checksum "./server/package-lock.json" }}
-            paths:
-              - ./server/node_modules
+      - save_cache:
+          key: npm-v1-{{ checksum "./server/package-lock.json" }}
+          paths:
+            - ./server/node_modules
       - run: cd server/; npm run dev
       - run:
           name: php test
