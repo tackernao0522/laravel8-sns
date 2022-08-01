@@ -5,8 +5,8 @@ jobs:
       - image: circleci/php:8.0-node-browsers-legacy
     steps:
       - checkout
-      - run: sudo composer self-update
-      - run: composer install --working-dir=./server/
+      - run: sudo composer self-update --2
+      - run: composer install -n --prefer-dist --working-dir=./server/
       - run:
           name: npm ci
           command: |
