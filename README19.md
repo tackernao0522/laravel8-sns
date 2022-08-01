@@ -218,3 +218,49 @@ GOOGLE_CLIENT_SECRET=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
 ## 6. CircleCIでテストを実行する
 
 + githubにpushしてCircleCIでテストが通ればOK <br>
+
+# 3-4 キャッシュを利用する(npm)
+
++ `.circleci/config.yml`を編集<br>
+
+```yml:config.yml
+version: 2.1
+jobs:
+  build:
+    docker:
+      - image: circleci/php:8.0-node-browsers-legacy
+    steps:
+      - checkout
+      - run: sudo composer self-update --2
+      - restore_cache:
+          key: composer-v1-{{ checksum "./server/composer.lock" }}
+      - run: composer install -n --prefer-dist --working-dir=./server/
+      - save_cache:
+          key: composer-v1-{{ checksum "./server/composer.lock" }}
+          paths:
+            - .server/vendor
+      - restore_cache:
+          key: npm-v1-{{ checksum "./server/package-lock.json" }}
+      - run:
+          name: npm ci
+          command: |
+            if [ ! -d ./server/node_modules ]; then
+              cd server/; npm ci
+            fi
+        - save_cache:
+            key: npm-v1-{{ checksum "./server/package-lock.json" }}
+            paths:
+              - ./server/node_modules
+      - run: cd server/; npm run dev
+      - run:
+          name: php test
+          command: cd server/; vendor/bin/phpunit
+```
+
++ [if文とtestコマンド](https://shellscript.sunone.me/if_and_test.html#if-%E6%96%87%E3%81%A8-test-%E3%82%B3%E3%83%9E%E3%83%B3%E3%83%89) <br>
+
++ [npm-ci | npm Documentation](https://docs.npmjs.com/cli/ci.html#example) <br>
+
+## 2. CircleCIを実行する<br>
+
++ githubにpushしてCircleCIが問題なければOK <br>
