@@ -21,4 +21,4 @@ jobs:
       - run: cd server/; composer dump-autoload
       - run:
           name: php test
-          command: php ./server/vendor/bin/phpunit --configuration=./server/phpunit.xml
+          command: php ./server/vendor/bin/phpunit tests --configuration=./server/phpunit.xml
