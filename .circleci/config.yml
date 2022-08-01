@@ -18,7 +18,7 @@ jobs:
           command: |
             cd server/; npm ci
       - run: cd server/; npm run dev
-      - run: cd server/; composer dump-autoload
+      # - run: cd server/; composer dump-autoload
       - run:
           name: php test
-          command: cd server/; vendor/bin/phpunit
+          command: php ./server/vendor/bin/phpunit/ --configuration=./server/phpunit.xml
