@@ -16,4 +16,4 @@ jobs:
       - run: cd server/; npm run dev
       - run:
           name: php test
-          command: php vendor/bin/phpunit --configuration=./server/phpunit.xml
+          command: php server/vendor/bin/phpunit --configuration=./server/phpunit.xml
