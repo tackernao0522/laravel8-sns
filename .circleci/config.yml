@@ -37,6 +37,7 @@ jobs:
             sudo apt update
             sudo apt-get install default-mysql-client
             sudo docker-php-ext-install pdo_mysql
+            default-authentication-plugin=mysql_native_password
             dockerize -wait tcp://localhost:3306 -timeout 1m
       - run:
           name: php test
