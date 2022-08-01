@@ -15,7 +15,7 @@ jobs:
     steps:
       - checkout
       - run: sudo composer self-update
-      - run: composer install -n --prefer-dist --working-dir=./server/
+      - run: composer install --working-dir=./server/
       - run:
           name: npm ci
           command: |
