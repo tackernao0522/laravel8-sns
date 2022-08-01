@@ -16,9 +16,7 @@ jobs:
       - run:
           name: npm ci
           command: |
-            if [ ! -d ./server/node_modules ]; then
-              cd server/; npm ci
-            fi
+            cd server/; npm ci
       - run: cd server/; npm run dev
       - run:
           name: php test
