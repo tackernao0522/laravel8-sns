@@ -35,8 +35,7 @@ jobs:
           name: get ready for mysql
           command: |
             sudo apt-get update
-            wget  http://packages.osrfoundation.org/gazebo.key
-            sudo apt-key add gazebo.key
+            sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4EB27DB2A3B88B8B
             sudo apt-get install default-mysql-client
             sudo docker-php-ext-install pdo_mysql
             dockerize -wait tcp://localhost:3306 -timeout 1m
