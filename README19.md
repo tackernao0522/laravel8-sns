@@ -34,6 +34,3 @@ jobs:
 
 + `$ cp .env .env.testing`を実行<br>
 
-+ `$ php artisan key:generate --show`を実行<br>
-
-+ `server/.env.testing`を編集<br>
